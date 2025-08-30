@@ -1,0 +1,29 @@
+{
+  "name": "yarn-plugin-auth",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@yarnpkg/cli": "^4.9.2",
+    "@yarnpkg/core": "^4.4.2",
+    "@yarnpkg/plugin-npm": "^3.2.0",
+    "clipanion": "^4.0.0-rc.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@yarnpkg/builder": "^4.2.2",
+    "prettier": "^3.6.2",
+    "rimraf": "5.0.0",
+    "typescript": "^5.5.2"
+  },
+  "scripts": {
+    "build": "builder build plugin",
+    "build:dev": "builder build plugin --no-minify",
+    "clean": "rimraf bundles"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true
+  },
+  "packageManager": "yarn@4.9.4"
+}
