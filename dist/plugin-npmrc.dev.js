@@ -17,6 +17,9 @@ var plugin = (() => {
     if (typeof require !== "undefined") return require.apply(this, arguments);
     throw Error('Dynamic require of "' + x + '" is not supported');
   });
+  var __esm = (fn, res) => function __init() {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  };
   var __commonJS = (cb, mod) => function __require2() {
     return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
@@ -10177,30 +10180,32 @@ ${noEnvExport}`);
     }
   });
 
-  // src/index.ts
-  var src_exports = {};
-  __export(src_exports, {
-    default: () => src_default
-  });
-  var import_core2 = __require("@yarnpkg/core");
-
-  // src/loadNpmrc.ts
-  var import_config = __toESM(require_lib7());
-  var import_definitions = __toESM(require_definitions2());
-  var import_fs = __toESM(__require("fs"));
-  var import_which = __toESM(require_lib8());
-
   // src/errors.ts
-  var import_core = __require("@yarnpkg/core");
-  var pluginName = "yarn-plugin-npmrc";
+  var errors_exports = {};
+  __export(errors_exports, {
+    pluginName: () => pluginName,
+    throwError: () => throwError
+  });
   function throwError(messageOrError) {
     throw new import_core.ReportError(
       import_core.MessageName.UNNAMED,
       `[${pluginName}] ${messageOrError.message || messageOrError}`
     );
   }
+  var import_core, pluginName;
+  var init_errors = __esm({
+    "src/errors.ts"() {
+      "use strict";
+      import_core = __require("@yarnpkg/core");
+      pluginName = "yarn-plugin-npmrc";
+    }
+  });
 
   // src/loadNpmrc.ts
+  var loadNpmrc_exports = {};
+  __export(loadNpmrc_exports, {
+    loadNpmrc: () => loadNpmrc
+  });
   async function loadNpmrc() {
     let npmPath = "";
     try {
@@ -10224,8 +10229,24 @@ ${noEnvExport}`);
     }
     return conf;
   }
+  var import_config, import_definitions, import_fs, import_which;
+  var init_loadNpmrc = __esm({
+    "src/loadNpmrc.ts"() {
+      "use strict";
+      import_config = __toESM(require_lib7());
+      import_definitions = __toESM(require_definitions2());
+      import_fs = __toESM(__require("fs"));
+      import_which = __toESM(require_lib8());
+      init_errors();
+    }
+  });
 
   // src/index.ts
+  var src_exports = {};
+  __export(src_exports, {
+    default: () => src_default
+  });
+  var import_core2 = __require("@yarnpkg/core");
   var configurationMap = {
     npmrcAuthEnabled: {
       description: "Attempt to read auth info from .npmrc for all registry requests",
@@ -10247,15 +10268,19 @@ ${noEnvExport}`);
     if (npmrcError) {
       throw npmrcError;
     }
-    try {
-      npmrc = await loadNpmrc();
-    } catch (err) {
-      npmrcError = err;
-      throw npmrcError;
+    if (!npmrc) {
+      const { loadNpmrc: loadNpmrc2 } = await Promise.resolve().then(() => (init_loadNpmrc(), loadNpmrc_exports));
+      try {
+        npmrc = await loadNpmrc2();
+      } catch (err) {
+        npmrcError = err;
+        throw npmrcError;
+      }
     }
     const credentials = npmrc.getCredentialsByURI(registry);
     if (credentials.certfile || credentials.keyfile) {
-      throwError(
+      const { throwError: throwError2 } = await Promise.resolve().then(() => (init_errors(), errors_exports));
+      throwError2(
         `This plugin does not support certfile or keyfile auth (for registry "${registry}")`
       );
     }

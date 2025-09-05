@@ -2,27 +2,34 @@
 
 This plugin implements registry authentication using settings from `.npmrc`, following the same logic as npm itself.
 
+Pulling credentials from `.npmrc` can be helpful for repos migrating from another package manager, or for interoperability with other tools.
+
 ## Install
 
 Usually you'll want the minified version of the plugin:
 
 ```
-yarn plugin import https://raw.githubusercontent.com/ecraig12345/yarn-plugin-npmrc/v0.2.0/bundles/@yarnpkg/plugin-npmrc.js
+yarn plugin import https://raw.githubusercontent.com/ecraig12345/yarn-plugin-npmrc/v0.2.0/dist/plugin-npmrc.js
 ```
 
 If you'd like a non-minified version for debugging:
 
 ```
-yarn plugin import https://raw.githubusercontent.com/ecraig12345/yarn-plugin-npmrc/v0.2.0/bundles/@yarnpkg/plugin-npmrc-dev.js
+yarn plugin import https://raw.githubusercontent.com/ecraig12345/yarn-plugin-npmrc/v0.2.0/dist/plugin-npmrc.dev.js
 ```
 
 ## Usage
 
-Update `.yarnrc.yml` with the setting to enable the plugin for all registries, then run `yarn` as usual.
+If migrating from another package manager or yarn v1:
 
-```yml
-npmrcAuthEnabled: true
-```
+1. Generate credentials and save in `.npmrc` following your usual method
+1. If you were using the `.npmrc` settings `registry` or `always-auth`, those must be moved to `.yarnrc.yml`: [`npmRegistryServer`](https://yarnpkg.com/configuration/yarnrc#npmRegistryServer), [`npmAlwaysAuth`](https://yarnpkg.com/configuration/yarnrc#npmAlwaysAuth), or the [scope-specific](https://yarnpkg.com/configuration/yarnrc#npmScopes) or [registry-specific](https://yarnpkg.com/configuration/yarnrc#npmRegistries) versions of those settings
+
+In all cases:
+
+1. Import the plugin as above
+1. In your `.yarnrc.yml`, add: `npmrcAuthEnabled: true`
+1. Run `yarn` or other commands
 
 ## Notes
 

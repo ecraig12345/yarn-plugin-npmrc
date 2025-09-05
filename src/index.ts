@@ -1,3 +1,5 @@
+// NOTE: Only import types (or required yarn internals) here!
+// Auth isn't needed in many cases, so we shouldn't load bigger dependencies upfront.
 import type NpmConfig from '@npmcli/config';
 import {
   SettingsType,
@@ -6,8 +8,6 @@ import {
   type ConfigurationValueMap,
 } from '@yarnpkg/core';
 import type { Hooks as NpmHooks } from '@yarnpkg/plugin-npm';
-import { loadNpmrc } from './loadNpmrc';
-import { throwError } from './errors';
 
 interface NpmrcAuthConfig {
   npmrcAuthEnabled: boolean;
@@ -54,16 +54,21 @@ const getNpmAuthenticationHeader: NpmHooks['getNpmAuthenticationHeader'] = async
     throw npmrcError;
   }
 
-  try {
-    npmrc = await loadNpmrc();
-  } catch (err) {
-    npmrcError = err;
-    throw npmrcError;
+  if (!npmrc) {
+    // Delay load this since auth is irrelevant for many commands
+    const { loadNpmrc } = await import('./loadNpmrc');
+    try {
+      npmrc = await loadNpmrc();
+    } catch (err) {
+      npmrcError = err;
+      throw npmrcError;
+    }
   }
 
   const credentials = npmrc.getCredentialsByURI(registry);
 
   if (credentials.certfile || credentials.keyfile) {
+    const { throwError } = await import('./errors');
     throwError(
       `This plugin does not support certfile or keyfile auth (for registry "${registry}")`,
     );
