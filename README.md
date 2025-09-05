@@ -1,6 +1,6 @@
 # `yarn-plugin-auth`
 
-This plugin implements registry authentication using settings from `.npmrc`, following the same logic as npm itself. (`certfile` and `keyfile` aren't supported.)
+This plugin implements registry authentication using settings from `.npmrc`, following the same logic as npm itself.
 
 ## Install
 
@@ -26,6 +26,9 @@ npmrcAuthEnabled: true
 
 ## Notes
 
-This plugin uses [`@npmcli/config`](https://www.npmjs.com/package/@npmcli/config) to read the effective npm config, with the same logic as npm: applying `process.env.NPM_CONFIG_*`, project config, user config, and global config. (It does _not_ respect CLI args, since they might interfere with yarn's processing.)
+This plugin uses [`@npmcli/config`](https://www.npmjs.com/package/@npmcli/config) to read the effective npm config: applying `process.env.NPM_CONFIG_*`, project config, user config, and global config. There are a couple limitations:
+
+- CLI args aren't respected, since they might interfere with yarn's processing.
+- `certfile` and `keyfile` aren't supported.
 
 The versions of `@npmcli/config` and its internal `@npmcli/package-json` are patched locally (with the patches included in the plugin bundle). The main reason is to get rid of a problematic `require.resolve('node-gyp/bin/node-gyp.js')` which assumes the code is running within the `npm` package with its dependencies and isn't needed here. The patches also remove some code which isn't needed for the very simple purposes of this plugin.
