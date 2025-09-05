@@ -1,29 +1,39 @@
 {
-  "name": "yarn-plugin-auth",
-  "version": "0.1.0",
+  "name": "yarn-plugin-npmrc",
+  "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "main": "./src/index.ts",
-  "dependencies": {
-    "@yarnpkg/cli": "^4.9.2",
-    "@yarnpkg/core": "^4.4.2",
-    "@yarnpkg/plugin-npm": "^3.2.0",
-    "clipanion": "^4.0.0-rc.2"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@yarnpkg/builder": "^4.2.2",
-    "prettier": "^3.6.2",
-    "rimraf": "5.0.0",
-    "typescript": "^5.5.2"
-  },
   "scripts": {
     "build": "builder build plugin",
     "build:dev": "builder build plugin --no-minify",
     "clean": "rimraf bundles"
   },
+  "dependencies": {
+    "@npmcli/config": "patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch",
+    "@yarnpkg/cli": "^4.9.2",
+    "@yarnpkg/core": "^4.4.2",
+    "@yarnpkg/plugin-npm": "^3.2.0",
+    "@yarnpkg/plugin-pack": "^4.0.2",
+    "which": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/npmcli__config": "patch:@types/npmcli__config@npm%3A6.0.3#~/.yarn/patches/@types-npmcli__config-npm-6.0.3-0c61657b64.patch",
+    "@types/semver": "^7",
+    "@types/which": "^3.0.4",
+    "@yarnpkg/builder": "^4.2.2",
+    "prettier": "^3.6.2",
+    "rimraf": "5.0.0",
+    "semver": "^7.7.2",
+    "typescript": "^5.5.2"
+  },
   "prettier": {
     "printWidth": 100,
     "singleQuote": true
   },
-  "packageManager": "yarn@4.9.4"
+  "packageManager": "yarn@4.9.4",
+  "resolutions": {
+    "@npmcli/package-json": "patch:@npmcli/package-json@npm%3A6.2.0#~/.yarn/patches/@npmcli-package-json-npm-6.2.0-6ed662ce85.patch"
+  }
 }
