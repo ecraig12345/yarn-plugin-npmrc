@@ -7,13 +7,13 @@ This plugin implements registry authentication using settings from `.npmrc`, fol
 Usually you'll want the minified version of the plugin:
 
 ```
-yarn plugin import https://raw.githubusercontent.com/ecraig12345/yarn-plugin-npmrc/v0.0.0/bundles/@yarnpkg/plugin-npmrc.js
+yarn plugin import https://raw.githubusercontent.com/ecraig12345/yarn-plugin-npmrc/v0.1.0/bundles/@yarnpkg/plugin-npmrc.js
 ```
 
 If you'd like a non-minified version for debugging:
 
 ```
-yarn plugin import https://raw.githubusercontent.com/ecraig12345/yarn-plugin-npmrc/v0.0.0/bundles/@yarnpkg/plugin-npmrc-dev.js
+yarn plugin import https://raw.githubusercontent.com/ecraig12345/yarn-plugin-npmrc/v0.1.0/bundles/@yarnpkg/plugin-npmrc-dev.js
 ```
 
 ## Usage
