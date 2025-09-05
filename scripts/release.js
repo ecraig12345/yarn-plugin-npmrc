@@ -54,6 +54,8 @@ runCommand('git', ['commit', '-m', `Bump version to ${vNew}`]);
 // tag and push the new version
 runCommand('git', ['tag', vNew]);
 runCommand('git', ['push', '--tags', 'origin', 'main']);
+// create a github release
+runCommand('gh', ['release', 'create', '--generate-notes', vNew]);
 
 function runCommand(command, args) {
   console.log(`Running: ${command} ${args.join(' ')}`);
