@@ -1,5 +1,5 @@
 import NpmConfig from '@npmcli/config';
-import { definitions, shorthands, flatten } from '@npmcli/config/lib/definitions';
+import { definitions, shorthands } from '@npmcli/config/lib/definitions';
 import fs from 'fs';
 import which from 'which';
 import { throwError } from './errors';
@@ -21,7 +21,6 @@ export async function loadNpmrc(): Promise<NpmConfig> {
     npmPath,
     definitions,
     shorthands,
-    flatten,
     // prevent arg processing
     argv: [],
   });
