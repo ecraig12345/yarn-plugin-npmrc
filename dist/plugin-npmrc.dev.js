@@ -447,8 +447,8 @@ var plugin = (() => {
       var doesNotHaveTypeDef = (type, def) => def && !hasTypeDef(type, def);
       function nopt(args, {
         types,
-        shorthands: shorthands2,
-        typeDefs,
+        shorthands,
+        typeDefs: typeDefs2,
         invalidHandler,
         // opt is configured but its value does not validate against given type
         unknownHandler,
@@ -458,7 +458,7 @@ var plugin = (() => {
         typeDefault,
         dynamicTypes
       } = {}) {
-        debug(types, shorthands2, args, typeDefs);
+        debug(types, shorthands, args, typeDefs2);
         const data = {};
         const argv = {
           remain: [],
@@ -466,14 +466,14 @@ var plugin = (() => {
           original: args.slice(0)
         };
         parse(args, data, argv.remain, {
-          typeDefs,
+          typeDefs: typeDefs2,
           types,
           dynamicTypes,
-          shorthands: shorthands2,
+          shorthands,
           unknownHandler,
           abbrevHandler
         });
-        clean(data, { types, dynamicTypes, typeDefs, invalidHandler, typeDefault });
+        clean(data, { types, dynamicTypes, typeDefs: typeDefs2, invalidHandler, typeDefault });
         data.argv = argv;
         Object.defineProperty(data.argv, "toString", {
           value: function() {
@@ -485,16 +485,16 @@ var plugin = (() => {
       }
       function clean(data, {
         types = {},
-        typeDefs = {},
+        typeDefs: typeDefs2 = {},
         dynamicTypes,
         invalidHandler,
         typeDefault
       } = {}) {
-        const StringType = typeDefs.String?.type;
-        const NumberType = typeDefs.Number?.type;
-        const ArrayType = typeDefs.Array?.type;
-        const BooleanType = typeDefs.Boolean?.type;
-        const DateType = typeDefs.Date?.type;
+        const StringType = typeDefs2.String?.type;
+        const NumberType = typeDefs2.Number?.type;
+        const ArrayType = typeDefs2.Array?.type;
+        const BooleanType = typeDefs2.Boolean?.type;
+        const DateType = typeDefs2.Date?.type;
         const hasTypeDefault = typeof typeDefault !== "undefined";
         if (!hasTypeDefault) {
           typeDefault = [false, true, null];
@@ -556,7 +556,7 @@ var plugin = (() => {
             const d = {};
             d[k] = v;
             debug("prevalidated val", d, v, rawType);
-            if (!validate(d, k, v, rawType, { typeDefs })) {
+            if (!validate(d, k, v, rawType, { typeDefs: typeDefs2 })) {
               if (invalidHandler) {
                 invalidHandler(k, v, rawType, data);
               } else if (invalidHandler !== false) {
@@ -579,14 +579,14 @@ var plugin = (() => {
           debug("k=%s val=%j", k, val, data[k]);
         });
       }
-      function validate(data, k, val, type, { typeDefs } = {}) {
-        const ArrayType = typeDefs?.Array?.type;
+      function validate(data, k, val, type, { typeDefs: typeDefs2 } = {}) {
+        const ArrayType = typeDefs2?.Array?.type;
         if (Array.isArray(type)) {
           for (let i = 0, l = type.length; i < l; i++) {
             if (isTypeDef(type[i], ArrayType)) {
               continue;
             }
-            if (validate(data, k, val, type[i], { typeDefs })) {
+            if (validate(data, k, val, type[i], { typeDefs: typeDefs2 })) {
               return true;
             }
           }
@@ -607,10 +607,10 @@ var plugin = (() => {
           return true;
         }
         let ok = false;
-        const types = Object.keys(typeDefs);
+        const types = Object.keys(typeDefs2);
         for (let i = 0, l = types.length; i < l; i++) {
           debug("test type %j %j %j", k, val, types[i]);
-          const t = typeDefs[types[i]];
+          const t = typeDefs2[types[i]];
           if (t && (type && type.name && t.type && t.type.name ? type.name === t.type.name : type === t.type)) {
             const d = {};
             ok = t.validate(d, k, val) !== false;
@@ -629,20 +629,20 @@ var plugin = (() => {
       }
       function parse(args, data, remain, {
         types = {},
-        typeDefs = {},
-        shorthands: shorthands2 = {},
+        typeDefs: typeDefs2 = {},
+        shorthands = {},
         dynamicTypes,
         unknownHandler,
         abbrevHandler
       } = {}) {
-        const StringType = typeDefs.String?.type;
-        const NumberType = typeDefs.Number?.type;
-        const ArrayType = typeDefs.Array?.type;
-        const BooleanType = typeDefs.Boolean?.type;
+        const StringType = typeDefs2.String?.type;
+        const NumberType = typeDefs2.Number?.type;
+        const ArrayType = typeDefs2.Array?.type;
+        const BooleanType = typeDefs2.Boolean?.type;
         debug("parse", args, data, remain);
         const abbrevs = abbrev(Object.keys(types));
         debug("abbrevs=%j", abbrevs);
-        const shortAbbr = abbrev(Object.keys(shorthands2));
+        const shortAbbr = abbrev(Object.keys(shorthands));
         for (let i = 0; i < args.length; i++) {
           let arg = args[i];
           debug("arg", arg);
@@ -660,7 +660,7 @@ var plugin = (() => {
               arg = arg.slice(0, at);
               args.splice(i, 1, arg, v);
             }
-            const shRes = resolveShort(arg, shortAbbr, abbrevs, { shorthands: shorthands2, abbrevHandler });
+            const shRes = resolveShort(arg, shortAbbr, abbrevs, { shorthands, abbrevHandler });
             debug("arg=%j shRes=%j", arg, shRes);
             if (shRes) {
               args.splice.apply(args, [i, 1].concat(shRes));
@@ -771,38 +771,38 @@ var plugin = (() => {
         }
       }
       var SINGLES = Symbol("singles");
-      var singleCharacters = (arg, shorthands2) => {
-        let singles = shorthands2[SINGLES];
+      var singleCharacters = (arg, shorthands) => {
+        let singles = shorthands[SINGLES];
         if (!singles) {
-          singles = Object.keys(shorthands2).filter((s) => s.length === 1).reduce((l, r) => {
+          singles = Object.keys(shorthands).filter((s) => s.length === 1).reduce((l, r) => {
             l[r] = true;
             return l;
           }, {});
-          shorthands2[SINGLES] = singles;
+          shorthands[SINGLES] = singles;
           debug("shorthand singles", singles);
         }
         const chrs = arg.split("").filter((c) => singles[c]);
         return chrs.join("") === arg ? chrs : null;
       };
       function resolveShort(arg, ...rest) {
-        const { abbrevHandler, types = {}, shorthands: shorthands2 = {} } = rest.length ? rest.pop() : {};
-        const shortAbbr = rest[0] ?? abbrev(Object.keys(shorthands2));
+        const { abbrevHandler, types = {}, shorthands = {} } = rest.length ? rest.pop() : {};
+        const shortAbbr = rest[0] ?? abbrev(Object.keys(shorthands));
         const abbrevs = rest[1] ?? abbrev(Object.keys(types));
         arg = arg.replace(/^-+/, "");
         if (abbrevs[arg] === arg) {
           return null;
         }
-        if (shorthands2[arg]) {
-          if (shorthands2[arg] && !Array.isArray(shorthands2[arg])) {
-            shorthands2[arg] = shorthands2[arg].split(/\s+/);
+        if (shorthands[arg]) {
+          if (shorthands[arg] && !Array.isArray(shorthands[arg])) {
+            shorthands[arg] = shorthands[arg].split(/\s+/);
           }
-          return shorthands2[arg];
+          return shorthands[arg];
         }
-        const chrs = singleCharacters(arg, shorthands2);
+        const chrs = singleCharacters(arg, shorthands);
         if (chrs) {
-          return chrs.map((c) => shorthands2[c]).reduce((l, r) => l.concat(r), []);
+          return chrs.map((c) => shorthands[c]).reduce((l, r) => l.concat(r), []);
         }
-        if (abbrevs[arg] && !shorthands2[arg]) {
+        if (abbrevs[arg] && !shorthands[arg]) {
           return null;
         }
         if (shortAbbr[arg]) {
@@ -813,10 +813,10 @@ var plugin = (() => {
           }
           arg = shortAbbr[arg];
         }
-        if (shorthands2[arg] && !Array.isArray(shorthands2[arg])) {
-          shorthands2[arg] = shorthands2[arg].split(/\s+/);
+        if (shorthands[arg] && !Array.isArray(shorthands[arg])) {
+          shorthands[arg] = shorthands[arg].split(/\s+/);
         }
-        return shorthands2[arg];
+        return shorthands[arg];
       }
       module.exports = {
         nopt,
@@ -838,20 +838,20 @@ var plugin = (() => {
       exports.clean = clean;
       exports.typeDefs = defaultTypeDefs;
       exports.lib = lib;
-      function nopt(types, shorthands2, args = process.argv, slice = 2) {
+      function nopt(types, shorthands, args = process.argv, slice = 2) {
         return lib.nopt(args.slice(slice), {
           types: types || {},
-          shorthands: shorthands2 || {},
+          shorthands: shorthands || {},
           typeDefs: exports.typeDefs,
           invalidHandler: exports.invalidHandler,
           unknownHandler: exports.unknownHandler,
           abbrevHandler: exports.abbrevHandler
         });
       }
-      function clean(data, types, typeDefs = exports.typeDefs) {
+      function clean(data, types, typeDefs2 = exports.typeDefs) {
         return lib.clean(data, {
           types: types || {},
-          typeDefs,
+          typeDefs: typeDefs2,
           invalidHandler: exports.invalidHandler,
           unknownHandler: exports.unknownHandler,
           abbrevHandler: exports.abbrevHandler
@@ -1032,26 +1032,9 @@ var plugin = (() => {
       };
       module.exports = {
         ...nopt.typeDefs,
-        url: {
-          ...nopt.typeDefs.url,
-          description: 'full url with "http://"'
-        },
         path: {
           ...nopt.typeDefs.path,
-          validate: validatePath,
-          description: "valid filesystem path"
-        },
-        Number: {
-          ...nopt.typeDefs.Number,
-          description: "numeric value"
-        },
-        Boolean: {
-          ...nopt.typeDefs.Boolean,
-          description: "boolean value (true or false)"
-        },
-        Date: {
-          ...nopt.typeDefs.Date,
-          description: "valid Date string"
+          validate: validatePath
         }
       };
       nopt.typeDefs = module.exports;
@@ -1090,7 +1073,6 @@ var plugin = (() => {
   // node_modules/@npmcli/config/lib/parse-field.js
   var require_parse_field = __commonJS({
     "node_modules/@npmcli/config/lib/parse-field.js"(exports, module) {
-      var typeDefs = require_type_defs2();
       var envReplace = require_env_replace();
       var { resolve } = __require("path");
       var parseField = (f, key, opts, listElement = false) => {
@@ -1104,7 +1086,6 @@ var plugin = (() => {
         const isString = isPath || typeList.has(typeDefs.String.type);
         const isNumber = typeList.has(typeDefs.Number.type);
         const isList = !listElement && typeList.has(Array);
-        const isDate = typeList.has(typeDefs.Date.type);
         if (Array.isArray(f)) {
           return !isList ? f : f.map((field) => parseField(field, key, opts, true));
         }
@@ -1128,9 +1109,6 @@ var plugin = (() => {
           }
         }
         f = envReplace(f, env);
-        if (isDate) {
-          return new Date(f);
-        }
         if (isPath) {
           const homePattern = platform === "win32" ? /^~(\/|\\)/ : /^~\//;
           if (homePattern.test(f) && home) {
@@ -1148,72 +1126,79 @@ var plugin = (() => {
     }
   });
 
-  // node_modules/@npmcli/config/lib/set-envs.js
-  var require_set_envs = __commonJS({
-    "node_modules/@npmcli/config/lib/set-envs.js"(exports, module) {
-      var envKey = (key, val) => {
-        return !/^[/@_]/.test(key) && typeof envVal(val) === "string" && `npm_config_${key.replace(/-/g, "_").toLowerCase()}`;
-      };
-      var envVal = (val) => Array.isArray(val) ? val.map((v) => envVal(v)).join("\n\n") : val === null || val === void 0 || val === false ? "" : typeof val === "object" ? null : String(val);
-      var sameConfigValue = (def, val) => !Array.isArray(val) || !Array.isArray(def) ? def === val : sameArrayValue(def, val);
-      var sameArrayValue = (def, val) => {
-        if (def.length !== val.length) {
-          return false;
+  // node_modules/@npmcli/config/lib/definitions/definitions.js
+  var require_definitions = __commonJS({
+    "node_modules/@npmcli/config/lib/definitions/definitions.js"(exports, module) {
+      var Definition = class {
+        constructor(key, def) {
+          this.key = key;
+          this.type = def.type;
+          this.default = def.default;
         }
-        for (let i = 0; i < def.length; i++) {
-          if (def[i] !== val[i]) {
-            return false;
+      };
+      var {
+        url: { type: url },
+        path: { type: path }
+      } = require_type_defs2();
+      var definitions = {
+        _auth: new Definition("_auth", {
+          default: null,
+          type: [null, String]
+        }),
+        global: new Definition("global", {
+          default: false,
+          type: Boolean
+        }),
+        // the globalconfig has its default defined outside of this module
+        globalconfig: new Definition("globalconfig", {
+          type: path,
+          default: ""
+        }),
+        location: new Definition("location", {
+          default: "user",
+          type: [
+            "global",
+            "user",
+            "project"
+          ]
+        }),
+        // `prefix` has its default defined outside of this module
+        prefix: new Definition("prefix", {
+          type: path,
+          default: ""
+        }),
+        registry: new Definition("registry", {
+          default: "https://registry.npmjs.org/",
+          type: url
+        }),
+        userconfig: new Definition("userconfig", {
+          default: "~/.npmrc",
+          type: path
+        })
+      };
+      module.exports = definitions;
+    }
+  });
+
+  // node_modules/@npmcli/config/lib/definitions/index.js
+  var require_definitions2 = __commonJS({
+    "node_modules/@npmcli/config/lib/definitions/index.js"(exports, module) {
+      var definitions = require_definitions();
+      var flatten = (obj, flat = {}) => {
+        for (const [key, val] of Object.entries(obj)) {
+          const def = definitions[key];
+          if (def && def.flatten) {
+            def.flatten(key, obj, flat);
+          } else if (/@.*:registry$/i.test(key) || /^\/\//.test(key)) {
+            flat[key] = val;
           }
         }
-        return true;
+        return flat;
       };
-      var setEnv = (env, rawKey, rawVal) => {
-        const val = envVal(rawVal);
-        const key = envKey(rawKey, val);
-        if (key && val !== null) {
-          env[key] = val;
-        }
+      module.exports = {
+        definitions,
+        flatten
       };
-      var setEnvs = (config) => {
-        const {
-          env,
-          defaults,
-          definitions: definitions2,
-          list: [cliConf, envConf]
-        } = config;
-        env.INIT_CWD = process.cwd();
-        const cliSet = new Set(Object.keys(cliConf));
-        const envSet = new Set(Object.keys(envConf));
-        for (const key in cliConf) {
-          const { deprecated, envExport = true } = definitions2[key] || {};
-          if (deprecated || envExport === false) {
-            continue;
-          }
-          if (sameConfigValue(defaults[key], cliConf[key])) {
-            if (!sameConfigValue(envConf[key], cliConf[key])) {
-              setEnv(env, key, cliConf[key]);
-            }
-          } else {
-            if (!(envSet.has(key) && !cliSet.has(key))) {
-              setEnv(env, key, cliConf[key]);
-            }
-          }
-        }
-        env.HOME = config.home;
-        env.npm_config_global_prefix = config.globalPrefix;
-        env.npm_config_local_prefix = config.localPrefix;
-        if (cliConf.editor) {
-          env.EDITOR = cliConf.editor;
-        }
-        if (cliConf["node-options"]) {
-          env.NODE_OPTIONS = cliConf["node-options"];
-        }
-        env.npm_config_node_gyp = cliConf["node-gyp"];
-        env.npm_config_npm_version = cliConf["npm-version"] || "unknown";
-        env.npm_execpath = config.npmBin;
-        env.NODE = env.npm_node_execpath = config.execPath;
-      };
-      module.exports = setEnvs;
     }
   });
 
@@ -1240,28 +1225,6 @@ var plugin = (() => {
       module.exports = {
         ErrInvalidAuth
       };
-    }
-  });
-
-  // node_modules/@npmcli/config/lib/type-description.js
-  var require_type_description = __commonJS({
-    "node_modules/@npmcli/config/lib/type-description.js"(exports, module) {
-      var typeDefs = require_type_defs2();
-      var typeDescription = (t) => {
-        if (!t || typeof t !== "function" && typeof t !== "object") {
-          return t;
-        }
-        if (Array.isArray(t)) {
-          return t.map((t2) => typeDescription(t2));
-        }
-        for (const { type, description } of Object.values(typeDefs)) {
-          if (type === t) {
-            return description || type;
-          }
-        }
-        return t;
-      };
-      module.exports = (t) => [].concat(typeDescription(t)).filter((t2) => t2 !== void 0);
     }
   });
 
@@ -1482,14 +1445,6 @@ var plugin = (() => {
     }
   });
 
-  // node_modules/@npmcli/package-json/lib/normalize.js
-  var require_normalize = __commonJS({
-    "node_modules/@npmcli/package-json/lib/normalize.js"(exports, module) {
-      module.exports = function() {
-      };
-    }
-  });
-
   // node_modules/@npmcli/package-json/lib/read-package.js
   var require_read_package = __commonJS({
     "node_modules/@npmcli/package-json/lib/read-package.js"(exports, module) {
@@ -1632,7 +1587,6 @@ var plugin = (() => {
       var updateDeps = require_update_dependencies();
       var updateScripts = require_update_scripts();
       var updateWorkspaces = require_update_workspaces();
-      var normalize = require_normalize();
       var { read, parse } = require_read_package();
       var { packageSort } = require_sort();
       var knownSteps = /* @__PURE__ */ new Set([
@@ -1646,47 +1600,6 @@ var plugin = (() => {
         "workspaces"
       ]);
       var PackageJson = class _PackageJson {
-        static normalizeSteps = Object.freeze([
-          "_id",
-          "_attributes",
-          "bundledDependencies",
-          "bundleDependencies",
-          "optionalDedupe",
-          "scripts",
-          "funding",
-          "bin"
-        ]);
-        // npm pkg fix
-        static fixSteps = Object.freeze([
-          "binRefs",
-          "bundleDependencies",
-          "bundleDependenciesFalse",
-          "fixName",
-          "fixNameField",
-          "fixVersionField",
-          "fixRepositoryField",
-          "fixDependencies",
-          "devDependencies",
-          "scriptpath"
-        ]);
-        static prepareSteps = Object.freeze([
-          "_id",
-          "_attributes",
-          "bundledDependencies",
-          "bundleDependencies",
-          "bundleDependenciesDeleteFalse",
-          "gypfile",
-          "serverjs",
-          "scriptpath",
-          "authors",
-          "readme",
-          "mans",
-          "binDir",
-          "gitHead",
-          "fillTypes",
-          "normalizeData",
-          "binRefs"
-        ]);
         // create a new empty package.json, so we can save at the given path even
         // though we didn't start from a parsed file
         static async create(path, opts = {}) {
@@ -1845,21 +1758,18 @@ var plugin = (() => {
         }
         async normalize(opts = {}) {
           if (!opts.steps) {
-            opts.steps = this.constructor.normalizeSteps;
+            opts.steps = {};
           }
-          await normalize(this, opts);
           return this;
         }
         async prepare(opts = {}) {
           if (!opts.steps) {
-            opts.steps = this.constructor.prepareSteps;
+            opts.steps = {};
           }
-          await normalize(this, opts);
           return this;
         }
         async fix(opts = {}) {
-          opts.steps = this.constructor.fixSteps;
-          await normalize(this, opts);
+          opts.steps = {};
           return this;
         }
       };
@@ -8873,30 +8783,21 @@ var plugin = (() => {
       var { walkUp } = require_commonjs();
       var ini = require_ini();
       var nopt = require_nopt();
-      var { log, time } = require_lib2();
+      var { log } = require_lib2();
       var { resolve, dirname, join } = __require("path");
       var { homedir } = __require("os");
       var {
         readFile,
-        writeFile,
-        chmod,
-        unlink,
-        stat,
-        mkdir
+        stat
       } = __require("fs/promises");
-      var internalEnv = [
-        "npm-version",
-        "global-prefix",
-        "local-prefix"
-      ];
       var fileExists = (...p) => stat(resolve(...p)).then((st) => st.isFile()).catch(() => false);
       var dirExists = (...p) => stat(resolve(...p)).then((st) => st.isDirectory()).catch(() => false);
       var hasOwnProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
-      var typeDefs = require_type_defs2();
+      var typeDefs2 = require_type_defs2();
       var nerfDart = require_nerf_dart();
       var envReplace = require_env_replace();
       var parseField = require_parse_field();
-      var setEnvs = require_set_envs();
+      var { definitions } = require_definitions2();
       var confFileTypes = /* @__PURE__ */ new Set([
         "global",
         "user",
@@ -8906,55 +8807,34 @@ var plugin = (() => {
         "default",
         "builtin",
         ...confFileTypes,
-        "env",
-        "cli"
+        "env"
+        // CLI logic removed
+        // 'cli',
       ]);
+      var highestConfType = "env";
       var Config = class {
         #loaded = false;
-        #flatten;
-        // populated the first time we flatten the object
-        #flatOptions = null;
-        static get typeDefs() {
-          return typeDefs;
-        }
         constructor({
-          definitions: definitions2,
-          shorthands: shorthands2,
-          flatten: flatten2,
-          nerfDarts = [],
           npmPath,
           // options just to override in tests, mostly
           env = process.env,
-          argv = process.argv,
           platform = process.platform,
           execPath = process.execPath,
-          cwd = process.cwd(),
-          excludeNpmCwd = false
+          cwd = process.cwd()
         }) {
-          this.nerfDarts = nerfDarts;
-          this.definitions = definitions2;
           const types = {};
           const defaults = {};
-          this.deprecated = {};
-          for (const [key, def] of Object.entries(definitions2)) {
+          for (const [key, def] of Object.entries(definitions)) {
             defaults[key] = def.default;
             types[key] = def.type;
-            if (def.deprecated) {
-              this.deprecated[key] = def.deprecated.trim().replace(/\n +/, "\n");
-            }
           }
-          this.#flatten = flatten2;
           this.types = types;
-          this.shorthands = shorthands2;
           this.defaults = defaults;
           this.npmPath = npmPath;
-          this.npmBin = join(this.npmPath, "bin/npm-cli.js");
-          this.argv = argv;
           this.env = env;
           this.execPath = execPath;
           this.platform = platform;
           this.cwd = cwd;
-          this.excludeNpmCwd = excludeNpmCwd;
           this.globalPrefix = null;
           this.localPrefix = null;
           this.localPackage = null;
@@ -8985,20 +8865,10 @@ var plugin = (() => {
         get prefix() {
           return this.#get("global") ? this.globalPrefix : this.localPrefix;
         }
-        // return the location where key is found.
-        find(key) {
-          if (!this.loaded) {
-            throw new Error("call config.load() before reading values");
-          }
-          const entries = [...this.data.entries()];
-          for (let i = entries.length - 1; i > -1; i--) {
-            const [where, { data }] = entries[i];
-            if (hasOwnProperty(data, key)) {
-              return where;
-            }
-          }
-          return null;
-        }
+        /**
+         * @param {Config.ConfType|null} [where] Get values from only this location if specified.
+         * Otherwise checks up the prototype chain in order of precedence.
+         */
         get(key, where) {
           if (!this.loaded) {
             throw new Error("call config.load() before reading values");
@@ -9007,55 +8877,16 @@ var plugin = (() => {
         }
         // we need to get values sometimes, so use this internal one to do so
         // while in the process of loading.
+        /**
+         * @param {Config.ConfType|null} [where] Get values from only this location if specified.
+         * Otherwise checks up the prototype chain in order of precedence.
+         */
         #get(key, where = null) {
           if (where !== null && !confTypes.has(where)) {
             throw new Error("invalid config location param: " + where);
           }
-          const { data } = this.data.get(where || "cli");
+          const { data } = this.data.get(where || highestConfType);
           return where === null || hasOwnProperty(data, key) ? data[key] : void 0;
-        }
-        set(key, val, where = "cli") {
-          if (!this.loaded) {
-            throw new Error("call config.load() before setting values");
-          }
-          if (!confTypes.has(where)) {
-            throw new Error("invalid config location param: " + where);
-          }
-          this.#checkDeprecated(key);
-          const { data, raw } = this.data.get(where);
-          data[key] = val;
-          if (["global", "user", "project"].includes(where)) {
-            raw[key] = val;
-          }
-          this.data.get(where)[_valid] = null;
-          this.#flatOptions = null;
-        }
-        get flat() {
-          if (this.#flatOptions) {
-            return this.#flatOptions;
-          }
-          const timeEnd = time.start("config:load:flatten");
-          this.#flatOptions = {};
-          for (const { data } of this.data.values()) {
-            this.#flatten(data, this.#flatOptions);
-          }
-          this.#flatOptions.nodeBin = this.execPath;
-          this.#flatOptions.npmBin = this.npmBin;
-          timeEnd();
-          return this.#flatOptions;
-        }
-        delete(key, where = "cli") {
-          if (!this.loaded) {
-            throw new Error("call config.load() before deleting values");
-          }
-          if (!confTypes.has(where)) {
-            throw new Error("invalid config location param: " + where);
-          }
-          const { data, raw } = this.data.get(where);
-          delete data[key];
-          if (["global", "user", "project"].includes(where)) {
-            delete raw[key];
-          }
         }
         async load() {
           if (this.loaded) {
@@ -9063,14 +8894,12 @@ var plugin = (() => {
           }
           this.loadDefaults();
           await this.loadBuiltinConfig();
-          this.loadCLI();
           this.loadEnv();
           await this.loadProjectConfig();
           await this.loadUserConfig();
           await this.loadGlobalConfig();
           this.#loaded = true;
           this.globalPrefix = this.get("prefix");
-          this.setEnvs();
         }
         loadDefaults() {
           this.loadGlobalPrefix();
@@ -9131,22 +8960,6 @@ var plugin = (() => {
           }
           this.#loadObject(conf, "env", "environment");
         }
-        loadCLI() {
-          for (const s of Object.keys(this.shorthands)) {
-            if (s.length > 1 && this.argv.includes(`-${s}`)) {
-              log.warn(`-${s} is not a valid single-hyphen cli flag and will be removed in the future`);
-            }
-          }
-          nopt.invalidHandler = (k, val, type) => this.invalidHandler(k, val, type, "command line options", "cli");
-          nopt.unknownHandler = this.unknownHandler;
-          nopt.abbrevHandler = this.abbrevHandler;
-          const conf = nopt(this.types, this.shorthands, this.argv);
-          nopt.invalidHandler = null;
-          nopt.unknownHandler = null;
-          this.parsedArgv = conf.argv;
-          delete conf.argv;
-          this.#loadObject(conf, "cli", "command line options");
-        }
         get valid() {
           for (const [where, { valid }] of this.data.entries()) {
             if (valid === false || valid === null && !this.validate(where)) {
@@ -9155,12 +8968,13 @@ var plugin = (() => {
           }
           return true;
         }
+        /** @param {Config.ConfType} [where] */
         validate(where) {
           if (!where) {
             let valid = true;
             const authProblems = [];
             for (const entryWhere of this.data.keys()) {
-              if (entryWhere === "default" || entryWhere === "builtin" || entryWhere === "cli") {
+              if (entryWhere === "default" || entryWhere === "builtin") {
                 continue;
               }
               const ret = this.validate(entryWhere);
@@ -9199,37 +9013,9 @@ var plugin = (() => {
             const obj = this.data.get(where);
             obj[_valid] = true;
             nopt.invalidHandler = (k, val, type) => this.invalidHandler(k, val, type, obj.source, where);
-            nopt.clean(obj.data, this.types, typeDefs);
+            nopt.clean(obj.data, this.types, typeDefs2);
             nopt.invalidHandler = null;
             return obj[_valid];
-          }
-        }
-        // fixes problems identified by validate(), accepts the 'problems' property from a thrown
-        // ErrInvalidAuth to avoid having to check everything again
-        repair(problems) {
-          if (!problems) {
-            try {
-              this.validate();
-            } catch (err) {
-              if (err.code !== "ERR_INVALID_AUTH") {
-                throw err;
-              }
-              problems = err.problems;
-            } finally {
-              if (!problems) {
-                problems = [];
-              }
-            }
-          }
-          for (const problem of problems) {
-            if (problem.action === "delete") {
-              this.delete(problem.key, problem.where);
-            } else if (problem.action === "rename") {
-              const raw = this.data.get(problem.where).raw?.[problem.from];
-              const calculated = this.get(problem.from, problem.where);
-              this.set(problem.to, raw || calculated, problem.where);
-              this.delete(problem.from, problem.where);
-            }
           }
         }
         // Returns true if the value is coming directly from the source defined
@@ -9244,49 +9030,17 @@ var plugin = (() => {
           });
         }
         invalidHandler(k, val, type, source, where) {
-          const typeDescription = require_type_description();
           log.warn(
             "invalid config",
             k + "=" + JSON.stringify(val),
             `set in ${source}`
           );
           this.data.get(where)[_valid] = false;
-          if (Array.isArray(type)) {
-            if (type.includes(typeDefs.url.type)) {
-              type = typeDefs.url.type;
-            } else {
-              if (type.includes(typeDefs.path.type)) {
-                type = typeDefs.path.type;
-              }
-            }
-          }
-          const typeDesc = typeDescription(type);
-          const mustBe = typeDesc.filter((m) => m !== void 0 && m !== Array);
-          const msg = "Must be" + this.#getOneOfKeywords(mustBe, typeDesc);
-          const desc = mustBe.length === 1 ? mustBe[0] : [...new Set(mustBe.map((n) => typeof n === "string" ? n : JSON.stringify(n)))].join(", ");
-          log.warn("invalid config", msg, desc);
         }
-        abbrevHandler(short, long) {
-          log.warn(`Expanding --${short} to --${long}. This will stop working in the next major version of npm.`);
-        }
-        unknownHandler(key, next) {
-          if (next) {
-            log.warn(`"${next}" is being parsed as a normal command line argument.`);
-          }
-        }
-        #getOneOfKeywords(mustBe, typeDesc) {
-          let keyword;
-          if (mustBe.length === 1 && typeDesc.includes(Array)) {
-            keyword = " one or more";
-          } else if (mustBe.length > 1 && typeDesc.includes(Array)) {
-            keyword = " one or more of:";
-          } else if (mustBe.length > 1) {
-            keyword = " one of:";
-          } else {
-            keyword = "";
-          }
-          return keyword;
-        }
+        /**
+         * @param {Config.ConfType} where
+         * @param {string} source file name or source description
+         */
         #loadObject(obj, where, source, er = null) {
           const conf = this.data.get(where);
           if (conf.source) {
@@ -9309,47 +9063,18 @@ var plugin = (() => {
             for (const [key, value] of Object.entries(obj)) {
               const k = envReplace(key, this.env);
               const v = this.parseField(value, k);
-              if (where !== "default") {
-                this.#checkDeprecated(k);
-                if (this.definitions[key]?.exclusive) {
-                  for (const exclusive of this.definitions[key].exclusive) {
-                    if (!this.isDefault(exclusive)) {
-                      throw new TypeError(`--${key} can not be provided when using --${exclusive}`);
-                    }
-                  }
-                }
-              }
-              if (where !== "default" || key === "npm-version") {
-                this.checkUnknown(where, key);
-              }
               conf.data[k] = v;
             }
-          }
-        }
-        checkUnknown(where, key) {
-          if (!this.definitions[key]) {
-            if (internalEnv.includes(key)) {
-              return;
-            }
-            if (!key.includes(":")) {
-              log.warn(`Unknown ${where} config "${where === "cli" ? "--" : ""}${key}". This will stop working in the next major version of npm.`);
-              return;
-            }
-            const baseKey = key.split(":").pop();
-            if (!this.definitions[baseKey] && !this.nerfDarts.includes(baseKey)) {
-              log.warn(`Unknown ${where} config "${baseKey}" (${key}). This will stop working in the next major version of npm.`);
-            }
-          }
-        }
-        #checkDeprecated(key) {
-          if (this.deprecated[key]) {
-            log.warn("config", key, this.deprecated[key]);
           }
         }
         // Parse a field, coercing it to the best type available.
         parseField(f, key, listElement = false) {
           return parseField(f, key, this, listElement);
         }
+        /**
+         * @param {string} file
+         * @param {Config.ConfType} type
+         */
         async #loadFile(file, type) {
           log.silly("config", `load:file:${file}`);
           await readFile(file, "utf8").then(
@@ -9385,22 +9110,13 @@ var plugin = (() => {
           }
         }
         async loadLocalPrefix() {
-          const cliPrefix = this.#get("prefix", "cli");
-          if (cliPrefix) {
-            this.localPrefix = cliPrefix;
-            return;
-          }
-          const cliWorkspaces = this.#get("workspaces", "cli");
           const isGlobal = this.#get("global") || this.#get("location") === "global";
           for (const p of walkUp(this.cwd)) {
-            if (this.excludeNpmCwd && p === this.npmPath) {
-              break;
-            }
             const hasPackageJson = await fileExists(p, "package.json");
             if (!this.localPrefix && (hasPackageJson || await dirExists(p, "node_modules"))) {
               this.localPrefix = p;
               this.localPackage = hasPackageJson;
-              if (cliWorkspaces === false || isGlobal) {
+              if (isGlobal) {
                 return;
               }
               continue;
@@ -9418,8 +9134,6 @@ var plugin = (() => {
                   if (await fileExists(this.localPrefix, ".npmrc")) {
                     log.warn("config", `ignoring workspace config at ${this.localPrefix}/.npmrc`);
                   }
-                  const { data } = this.data.get("default");
-                  data.workspace = [this.localPrefix];
                   this.localPrefix = p;
                   this.localPackage = hasPackageJson;
                   log.info("config", `found workspace root at ${this.localPrefix}`);
@@ -9438,97 +9152,10 @@ var plugin = (() => {
         loadGlobalConfig() {
           return this.#loadFile(this.#get("globalconfig"), "global");
         }
-        async save(where) {
-          if (!this.loaded) {
-            throw new Error("call config.load() before saving");
-          }
-          if (!confFileTypes.has(where)) {
-            throw new Error("invalid config location param: " + where);
-          }
-          const conf = this.data.get(where);
-          conf[_loadError] = null;
-          if (where === "user") {
-            const nerfed = nerfDart(this.get("registry"));
-            const email = this.get(`${nerfed}:email`, "user");
-            if (email) {
-              this.delete(`${nerfed}:email`, "user");
-              this.set("email", email, "user");
-            }
-          }
-          const iniData = ini.stringify(conf.raw).trim() + "\n";
-          if (!iniData.trim()) {
-            await unlink(conf.source).catch(() => {
-            });
-            return;
-          }
-          const dir = dirname(conf.source);
-          await mkdir(dir, { recursive: true });
-          await writeFile(conf.source, iniData, "utf8");
-          const mode = where === "user" ? 384 : 438;
-          await chmod(conf.source, mode);
-        }
-        clearCredentialsByURI(uri, level = "user") {
-          const nerfed = nerfDart(uri);
-          const def = nerfDart(this.get("registry"));
-          if (def === nerfed) {
-            this.delete(`-authtoken`, level);
-            this.delete(`_authToken`, level);
-            this.delete(`_authtoken`, level);
-            this.delete(`_auth`, level);
-            this.delete(`_password`, level);
-            this.delete(`username`, level);
-            const email = this.get(`${nerfed}:email`, level);
-            if (email) {
-              this.set("email", email, level);
-            }
-          }
-          this.delete(`${nerfed}:_authToken`, level);
-          this.delete(`${nerfed}:_auth`, level);
-          this.delete(`${nerfed}:_password`, level);
-          this.delete(`${nerfed}:username`, level);
-          this.delete(`${nerfed}:email`, level);
-          this.delete(`${nerfed}:certfile`, level);
-          this.delete(`${nerfed}:keyfile`, level);
-        }
-        setCredentialsByURI(uri, { token, username, password, certfile, keyfile }) {
-          const nerfed = nerfDart(uri);
-          this.delete(`${nerfed}:always-auth`, "user");
-          this.delete(`${nerfed}:email`, "user");
-          if (certfile && keyfile) {
-            this.set(`${nerfed}:certfile`, certfile, "user");
-            this.set(`${nerfed}:keyfile`, keyfile, "user");
-          }
-          if (token) {
-            this.set(`${nerfed}:_authToken`, token, "user");
-            this.delete(`${nerfed}:_password`, "user");
-            this.delete(`${nerfed}:username`, "user");
-          } else if (username || password) {
-            if (!username) {
-              throw new Error("must include username");
-            }
-            if (!password) {
-              throw new Error("must include password");
-            }
-            this.delete(`${nerfed}:_authToken`, "user");
-            this.set(`${nerfed}:username`, username, "user");
-            const encoded = Buffer.from(password, "utf8").toString("base64");
-            this.set(`${nerfed}:_password`, encoded, "user");
-          } else if (!certfile || !keyfile) {
-            throw new Error("No credentials to set.");
-          }
-        }
         // this has to be a bit more complicated to support legacy data of all forms
         getCredentialsByURI(uri) {
           const nerfed = nerfDart(uri);
-          const def = nerfDart(this.get("registry"));
           const creds = {};
-          const email = this.get(`${nerfed}:email`) || this.get("email");
-          if (email) {
-            if (nerfed === def) {
-              this.set("email", email, "user");
-            }
-            creds.email = email;
-          }
           const certfileReg = this.get(`${nerfed}:certfile`);
           const keyfileReg = this.get(`${nerfed}:keyfile`);
           if (certfileReg && keyfileReg) {
@@ -9560,22 +9187,16 @@ var plugin = (() => {
           }
           return creds;
         }
-        // set up the environment object we have with npm_config_* environs
-        // for all configs that are different from their default values, and
-        // set EDITOR and HOME.
-        setEnvs() {
-          setEnvs(this);
-        }
       };
       var _loadError = Symbol("loadError");
       var _valid = Symbol("valid");
       var ConfigData = class {
         #data;
+        /** @type {string|null} */
         #source = null;
-        #raw = null;
+        #raw = {};
         constructor(parent) {
           this.#data = Object.create(parent && parent.data);
-          this.#raw = {};
           this[_valid] = true;
         }
         get data() {
@@ -9613,322 +9234,6 @@ var plugin = (() => {
         }
       };
       module.exports = Config;
-    }
-  });
-
-  // node_modules/@npmcli/config/lib/definitions/definition.js
-  var require_definition = __commonJS({
-    "node_modules/@npmcli/config/lib/definitions/definition.js"(exports, module) {
-      var required = ["type", "description", "default", "key"];
-      var allowed = [
-        "default",
-        "defaultDescription",
-        "deprecated",
-        "description",
-        "exclusive",
-        "flatten",
-        "hint",
-        "key",
-        "short",
-        "type",
-        "typeDescription",
-        "usage",
-        "envExport"
-      ];
-      var {
-        url: { type: url },
-        path: { type: path }
-      } = require_type_defs2();
-      var Definition = class {
-        constructor(key, def) {
-          this.key = key;
-          this.envExport = true;
-          Object.assign(this, def);
-          this.validate();
-          if (!this.defaultDescription) {
-            this.defaultDescription = describeValue(this.default);
-          }
-          if (!this.typeDescription) {
-            this.typeDescription = describeType(this.type);
-          }
-          if (!this.hint) {
-            if (this.type === Number) {
-              this.hint = "<number>";
-            } else {
-              this.hint = `<${this.key}>`;
-            }
-          }
-          if (!this.usage) {
-            this.usage = describeUsage(this);
-          }
-        }
-        validate() {
-          for (const req of required) {
-            if (!Object.prototype.hasOwnProperty.call(this, req)) {
-              throw new Error(`config lacks ${req}: ${this.key}`);
-            }
-          }
-          if (!this.key) {
-            throw new Error(`config lacks key: ${this.key}`);
-          }
-          for (const field of Object.keys(this)) {
-            if (!allowed.includes(field)) {
-              throw new Error(`config defines unknown field ${field}: ${this.key}`);
-            }
-          }
-        }
-        // a textual description of this config, suitable for help output
-        describe() {
-          const description = unindent(this.description);
-          const noEnvExport = this.envExport ? "" : `
-This value is not exported to the environment for child processes.
-`;
-          const deprecated = !this.deprecated ? "" : `* DEPRECATED: ${unindent(this.deprecated)}
-`;
-          const exclusive = !this.exclusive ? "" : `
-This config can not be used with: \`${this.exclusive.join("`, `")}\``;
-          return wrapAll(`#### \`${this.key}\`
-
-* Default: ${unindent(this.defaultDescription)}
-* Type: ${unindent(this.typeDescription)}
-${deprecated}
-${description}
-${exclusive}
-${noEnvExport}`);
-        }
-      };
-      var describeUsage = (def) => {
-        let key = "";
-        if (!Array.isArray(def.type)) {
-          if (def.short) {
-            key = `-${def.short}|`;
-          }
-          if (def.type === Boolean && def.default !== false) {
-            key = `${key}--no-${def.key}`;
-          } else {
-            key = `${key}--${def.key}`;
-          }
-          if (def.type !== Boolean) {
-            key = `${key} ${def.hint}`;
-          }
-          return key;
-        }
-        key = `--${def.key}`;
-        if (def.short) {
-          key = `-${def.short}|--${def.key}`;
-        }
-        let types = def.type;
-        const multiple = types.includes(Array);
-        const bool = types.includes(Boolean);
-        types = types.filter((t) => t !== null && t !== Array && t !== Boolean);
-        if (!types.length) {
-          return key;
-        }
-        let description;
-        if (!types.some((t) => typeof t !== "string")) {
-          description = `<${types.filter((d) => d).join("|")}>`;
-        } else {
-          description = def.hint;
-        }
-        if (bool) {
-          key = `--no-${def.key}|${key}`;
-        }
-        const usage = `${key} ${description}`;
-        if (multiple) {
-          return `${usage} [${usage} ...]`;
-        } else {
-          return usage;
-        }
-      };
-      var describeType = (type) => {
-        if (Array.isArray(type)) {
-          const descriptions = type.filter((t) => t !== Array).map((t) => describeType(t));
-          const last = descriptions.length > 1 ? [descriptions.pop()] : [];
-          const oxford = descriptions.length > 1 ? ", or " : " or ";
-          const words = [descriptions.join(", ")].concat(last).join(oxford);
-          const multiple = type.includes(Array) ? " (can be set multiple times)" : "";
-          return `${words}${multiple}`;
-        }
-        switch (type) {
-          case String:
-            return "String";
-          case Number:
-            return "Number";
-          case Boolean:
-            return "Boolean";
-          case Date:
-            return "Date";
-          case path:
-            return "Path";
-          case url:
-            return "URL";
-          default:
-            return describeValue(type);
-        }
-      };
-      var describeValue = (val) => typeof val === "string" ? JSON.stringify(val) : String(val);
-      var unindent = (s) => {
-        const match = s.match(/\n +/);
-        return !match ? s.trim() : s.split(match[0]).join("\n").trim();
-      };
-      var wrap = (s) => {
-        const cols = Math.min(Math.max(20, process.stdout.columns) || 80, 80) - 5;
-        return unindent(s).split(/[ \n]+/).reduce((left, right) => {
-          const last = left.split("\n").pop();
-          const join = last.length && last.length + right.length > cols ? "\n" : " ";
-          return left + join + right;
-        });
-      };
-      var wrapAll = (s) => {
-        let inCodeBlock = false;
-        return s.split("\n\n").map((block) => {
-          if (inCodeBlock || block.startsWith("```")) {
-            inCodeBlock = !block.endsWith("```");
-            return block;
-          }
-          if (block.charAt(0) === "*") {
-            return "* " + block.slice(1).trim().split("\n* ").map((li) => {
-              return wrap(li).replace(/\n/g, "\n  ");
-            }).join("\n* ");
-          } else {
-            return wrap(block);
-          }
-        }).join("\n\n");
-      };
-      module.exports = Definition;
-    }
-  });
-
-  // node_modules/@npmcli/config/lib/definitions/definitions.js
-  var require_definitions = __commonJS({
-    "node_modules/@npmcli/config/lib/definitions/definitions.js"(exports, module) {
-      var Definition = require_definition();
-      var {
-        url: { type: url },
-        path: { type: path }
-      } = require_type_defs2();
-      var flatten2 = (key, obj, flatOptions) => {
-        const camel = key.replace(/-([a-z])/g, (_0, _1) => _1.toUpperCase());
-        flatOptions[camel] = obj[key];
-      };
-      var definitions2 = {
-        _auth: new Definition("_auth", {
-          default: null,
-          type: [null, String],
-          description: "",
-          flatten: flatten2
-        }),
-        // the globalconfig has its default defined outside of this module
-        globalconfig: new Definition("globalconfig", {
-          type: path,
-          default: "",
-          defaultDescription: "",
-          description: "",
-          flatten: flatten2
-        }),
-        location: new Definition("location", {
-          default: "user",
-          short: "L",
-          type: [
-            "global",
-            "user",
-            "project"
-          ],
-          defaultDescription: "",
-          description: "",
-          flatten: (key, obj, flatOptions) => {
-            flatten2(key, obj, flatOptions);
-            if (flatOptions.global) {
-              flatOptions.location = "global";
-            }
-            if (obj.location === "global") {
-              flatOptions.global = true;
-            }
-          }
-        }),
-        registry: new Definition("registry", {
-          default: "https://registry.npmjs.org/",
-          type: url,
-          description: "",
-          flatten: flatten2
-        }),
-        userconfig: new Definition("userconfig", {
-          default: "~/.npmrc",
-          type: path,
-          description: ""
-        })
-      };
-      module.exports = definitions2;
-    }
-  });
-
-  // node_modules/@npmcli/config/lib/definitions/index.js
-  var require_definitions2 = __commonJS({
-    "node_modules/@npmcli/config/lib/definitions/index.js"(exports, module) {
-      var definitions2 = require_definitions();
-      var flatten2 = (obj, flat = {}) => {
-        for (const [key, val] of Object.entries(obj)) {
-          const def = definitions2[key];
-          if (def && def.flatten) {
-            def.flatten(key, obj, flat);
-          } else if (/@.*:registry$/i.test(key) || /^\/\//.test(key)) {
-            flat[key] = val;
-          }
-        }
-        return flat;
-      };
-      var definitionProps = Object.entries(definitions2).reduce((acc, [key, { short = [], default: d }]) => {
-        for (const s of [].concat(short)) {
-          acc.shorthands[s] = [`--${key}`];
-        }
-        acc.defaults[key] = d;
-        return acc;
-      }, { shorthands: {}, defaults: {} });
-      var shorthands2 = {
-        "enjoy-by": ["--before"],
-        d: ["--loglevel", "info"],
-        dd: ["--loglevel", "verbose"],
-        ddd: ["--loglevel", "silly"],
-        quiet: ["--loglevel", "warn"],
-        q: ["--loglevel", "warn"],
-        s: ["--loglevel", "silent"],
-        silent: ["--loglevel", "silent"],
-        verbose: ["--loglevel", "verbose"],
-        desc: ["--description"],
-        help: ["--usage"],
-        local: ["--no-global"],
-        n: ["--no-yes"],
-        no: ["--no-yes"],
-        porcelain: ["--parseable"],
-        readonly: ["--read-only"],
-        reg: ["--registry"],
-        iwr: ["--include-workspace-root"],
-        ws: ["--workspaces"],
-        ...definitionProps.shorthands
-      };
-      var nerfDarts = [
-        "_auth",
-        // Has a config
-        "_authToken",
-        // Does not have a config
-        "_password",
-        // Does not have a config
-        "certfile",
-        // Does not have a config
-        "email",
-        // Does not have a config
-        "keyfile",
-        // Does not have a config
-        "username"
-        // Does not have a config
-      ];
-      module.exports = {
-        defaults: definitionProps.defaults,
-        definitions: definitions2,
-        flatten: flatten2,
-        nerfDarts,
-        shorthands: shorthands2
-      };
     }
   });
 
@@ -10180,10 +9485,18 @@ ${noEnvExport}`);
     }
   });
 
+  // src/constants.ts
+  var pluginName;
+  var init_constants = __esm({
+    "src/constants.ts"() {
+      "use strict";
+      pluginName = "yarn-plugin-npmrc";
+    }
+  });
+
   // src/errors.ts
   var errors_exports = {};
   __export(errors_exports, {
-    pluginName: () => pluginName,
     throwError: () => throwError
   });
   function throwError(messageOrError) {
@@ -10192,12 +9505,12 @@ ${noEnvExport}`);
       `[${pluginName}] ${messageOrError.message || messageOrError}`
     );
   }
-  var import_core, pluginName;
+  var import_core;
   var init_errors = __esm({
     "src/errors.ts"() {
       "use strict";
       import_core = __require("@yarnpkg/core");
-      pluginName = "yarn-plugin-npmrc";
+      init_constants();
     }
   });
 
@@ -10213,30 +9526,39 @@ ${noEnvExport}`);
     } catch {
       throwError(`Couldn't find "npm" executable to help read the config`);
     }
-    const conf = new import_config.default({
-      npmPath,
-      definitions: import_definitions.definitions,
-      shorthands: import_definitions.shorthands,
-      flatten: import_definitions.flatten,
-      // prevent arg processing
-      argv: []
-    });
+    const logLevels = ["silly", "verbose", "info", "http", "timing", "notice", "warn", "error"];
+    const maxLevelIndex = logLevels.indexOf(
+      process.env.NPM_CONFIG_LOGLEVEL || process.env.npm_config_loglevel || "warn"
+    );
+    const onLog = (level, ...args) => {
+      if (logLevels.indexOf(level) < maxLevelIndex) {
+        return;
+      }
+      console[level === "error" ? "error" : level === "warn" ? "warn" : "log"](
+        `[${pluginName}][${level}]`,
+        ...args
+      );
+    };
+    process.on("log", onLog);
     try {
+      const conf = new import_config.default({ npmPath });
       await conf.load();
       conf.validate();
+      return conf;
     } catch (err) {
       throwError(err);
+    } finally {
+      process.off("log", onLog);
     }
-    return conf;
   }
-  var import_config, import_definitions, import_fs, import_which;
+  var import_config, import_fs, import_which;
   var init_loadNpmrc = __esm({
     "src/loadNpmrc.ts"() {
       "use strict";
       import_config = __toESM(require_lib7());
-      import_definitions = __toESM(require_definitions2());
       import_fs = __toESM(__require("fs"));
       import_which = __toESM(require_lib8());
+      init_constants();
       init_errors();
     }
   });

@@ -246,7 +246,7 @@ __metadata:
 
 "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch":
   version: 10.4.0
-  resolution: "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch::version=10.4.0&hash=d82e1e"
+  resolution: "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch::version=10.4.0&hash=eafd26"
   dependencies:
     "@npmcli/map-workspaces": "npm:^4.0.1"
     "@npmcli/package-json": "npm:^6.0.1"
@@ -256,7 +256,7 @@ __metadata:
     proc-log: "npm:^5.0.0"
     semver: "npm:^7.3.5"
     walk-up-path: "npm:^4.0.0"
-  checksum: 10c0/35a24e4e3bf0101749e13274ac0a032334e54e0410e54d5a63145ed8a819fe71783faae42c2d2d0eacfa4ba006eff2292a3c28dad79071551877f86da3bc341a
+  checksum: 10c0/380a90c5c15ebff417d43ffc49cb277806ebb7a59651121f512d62ba31a13acb76e10a59876b5b8beda9b22d9baae487605b503b59285cacc9dfeeb61f89f5da
   languageName: node
   linkType: hard
 
@@ -321,7 +321,7 @@ __metadata:
 
 "@npmcli/package-json@patch:@npmcli/package-json@npm%3A6.2.0#~/.yarn/patches/@npmcli-package-json-npm-6.2.0-6ed662ce85.patch":
   version: 6.2.0
-  resolution: "@npmcli/package-json@patch:@npmcli/package-json@npm%3A6.2.0#~/.yarn/patches/@npmcli-package-json-npm-6.2.0-6ed662ce85.patch::version=6.2.0&hash=87431d"
+  resolution: "@npmcli/package-json@patch:@npmcli/package-json@npm%3A6.2.0#~/.yarn/patches/@npmcli-package-json-npm-6.2.0-6ed662ce85.patch::version=6.2.0&hash=38411c"
   dependencies:
     "@npmcli/git": "npm:^6.0.0"
     glob: "npm:^10.2.2"
@@ -330,7 +330,7 @@ __metadata:
     proc-log: "npm:^5.0.0"
     semver: "npm:^7.5.3"
     validate-npm-package-license: "npm:^3.0.4"
-  checksum: 10c0/779bfe28993bf1433f678a614d4e4e675ab7cd3c36819e5c7156a1dd57c3aedef97454639bc36a1700a71ed16f68932dcd747251c40e2ae837adffc16f81dec6
+  checksum: 10c0/f2084d88f8c38877d25cacb29ae57ef9ada9d4a25439d3f09d85c64642e559db36559f6cf033825a98700da6656c8418d76e9380018cdf6b276be559ad7cf620
   languageName: node
   linkType: hard
 
@@ -503,26 +503,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/npmcli__config@npm:6.0.3":
-  version: 6.0.3
-  resolution: "@types/npmcli__config@npm:6.0.3"
-  dependencies:
-    "@types/node": "npm:*"
-    "@types/semver": "npm:*"
-  checksum: 10c0/58d3530ced0e957c4fe2ffbf499feefe03300c1da96f19574e7ceccb96d9539714b959183f0ba7412e63090f5103b282584355222777ddb5dc9a4e7e4c8ad906
-  languageName: node
-  linkType: hard
-
-"@types/npmcli__config@patch:@types/npmcli__config@npm%3A6.0.3#~/.yarn/patches/@types-npmcli__config-npm-6.0.3-0c61657b64.patch":
-  version: 6.0.3
-  resolution: "@types/npmcli__config@patch:@types/npmcli__config@npm%3A6.0.3#~/.yarn/patches/@types-npmcli__config-npm-6.0.3-0c61657b64.patch::version=6.0.3&hash=ce5a06"
-  dependencies:
-    "@types/node": "npm:*"
-    "@types/semver": "npm:*"
-  checksum: 10c0/9f8c71b2b58da43cfaf42456928871924426ec9b6ae766277de9ef16392b611a33b38107485c665074e2848302eb70e5f7365e50bcaba076be9c0f42aceacd48
-  languageName: node
-  linkType: hard
-
 "@types/responselike@npm:^1.0.0":
   version: 1.0.3
   resolution: "@types/responselike@npm:1.0.3"
@@ -532,7 +512,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/semver@npm:*, @types/semver@npm:^7":
+"@types/semver@npm:^7":
   version: 7.7.1
   resolution: "@types/semver@npm:7.7.1"
   checksum: 10c0/c938aef3bf79a73f0f3f6037c16e2e759ff40c54122ddf0b2583703393d8d3127130823facb880e694caa324eb6845628186aac1997ee8b31dc2d18fafe26268
@@ -3233,7 +3213,6 @@ __metadata:
   dependencies:
     "@npmcli/config": "patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch"
     "@types/node": "npm:^20.0.0"
-    "@types/npmcli__config": "patch:@types/npmcli__config@npm%3A6.0.3#~/.yarn/patches/@types-npmcli__config-npm-6.0.3-0c61657b64.patch"
     "@types/semver": "npm:^7"
     "@types/which": "npm:^3.0.4"
     "@yarnpkg/builder": "npm:^4.2.2"

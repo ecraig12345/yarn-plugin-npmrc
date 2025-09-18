@@ -19,7 +19,6 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/npmcli__config": "patch:@types/npmcli__config@npm%3A6.0.3#~/.yarn/patches/@types-npmcli__config-npm-6.0.3-0c61657b64.patch",
     "@types/semver": "^7",
     "@types/which": "^3.0.4",
     "@yarnpkg/builder": "^4.2.2",

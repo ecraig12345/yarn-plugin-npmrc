@@ -1,40 +1,35 @@
+diff --git a/jsconfig.json b/jsconfig.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..e422b39a7e9e6a749bf420391fbd152c3113639f
+--- /dev/null
++++ b/jsconfig.json
+@@ -0,0 +1,8 @@
++{
++  "compilerOptions": {
++    "strictNullChecks": false,
++    "target": "esnext",
++    "checkJs": true
++  },
++  "include": ["lib"]
++}
+\ No newline at end of file
 diff --git a/lib/definitions/definition.js b/lib/definitions/definition.js
-index 333a91928526ed4a754a8c471fa76db172ea1e76..0c96fd8cac1e43f1dad8070dc4b358ff8b276996 100644
+index 333a91928526ed4a754a8c471fa76db172ea1e76..6cbe3ce79ee8e4c1b5cc22f3b62616403d96841b 100644
 --- a/lib/definitions/definition.js
 +++ b/lib/definitions/definition.js
-@@ -25,8 +25,6 @@ const allowed = [
- ]
- 
- const {
--  semver: { type: semver },
--  Umask: { type: Umask },
-   url: { type: url },
-   path: { type: path },
- } = require('../type-defs.js')
-@@ -183,16 +181,12 @@ const describeType = type => {
-       return 'String'
-     case Number:
-       return 'Number'
--    case Umask:
--      return 'Octal numeric string in range 0000..0777 (0..511)'
-     case Boolean:
-       return 'Boolean'
-     case Date:
-       return 'Date'
-     case path:
-       return 'Path'
--    case semver:
--      return 'SemVer string'
-     case url:
-       return 'URL'
-     default:
+@@ -1,3 +1,5 @@
++// UNUSED FILE (copied basic version to definitions.js)
++
+ // class that describes a config key we know about
+ // this keeps us from defining a config key and not
+ // providing a default, description, etc.
 diff --git a/lib/definitions/definitions.js b/lib/definitions/definitions.js
-index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209af2a66d4 100644
+index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..82faccc07daaacc945d3d550e5df239900ddfd6a 100644
 --- a/lib/definitions/definitions.js
 +++ b/lib/definitions/definitions.js
-@@ -1,95 +1,9 @@
- const Definition = require('./definition.js')
- 
+@@ -1,2311 +1,56 @@
+-const Definition = require('./definition.js')
+-
 -const ciInfo = require('ci-info')
 -const querystring = require('node:querystring')
 -const { join } = require('node:path')
@@ -51,9 +46,20 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      throw er
 -    }
 -    return null
--  }
--}
--
++/** @import Config from '../index.js' */
++
++/**
++ * Simplified version of definition.js
++ * @implements {Config.Definition}
++ */
++class Definition {
++  constructor (key, def) {
++    this.key = key
++    this.type = def.type
++    this.default = def.default
+   }
+ }
+ 
 -const buildOmitList = obj => {
 -  const include = obj.include || []
 -  const omit = obj.omit || []
@@ -119,16 +125,56 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -const cacheExtra = isWindows ? 'npm-cache' : '.npm'
 -const cache = `${cacheRoot}/${cacheExtra}`
 -
- // TODO: refactor these type definitions so that they are less
- // weird to pull out of the config module.
- // TODO: use better type definition/validation API, nopt's is so weird.
+-// TODO: refactor these type definitions so that they are less
+-// weird to pull out of the config module.
+-// TODO: use better type definition/validation API, nopt's is so weird.
  const {
 -  semver: { type: Semver },
 -  Umask: { type: Umask },
    url: { type: url },
    path: { type: path },
  } = require('../type-defs.js')
-@@ -137,1035 +51,15 @@ const definitions = {
+ 
+-// basic flattening function, just copy it over camelCase
+-const flatten = (key, obj, flatOptions) => {
+-  const camel = key.replace(/-([a-z])/g, (_0, _1) => _1.toUpperCase())
+-  flatOptions[camel] = obj[key]
+-}
+-
+-// TODO:
+-// Instead of having each definition provide a flatten method,
+-// provide the (?list of?) flat option field(s?) that it impacts.
+-// When that config is set, we mark the relevant flatOption fields
+-// dirty.  Then, a getter for that field defines how we actually
+-// set it.
+-//
+-// So, `save-dev`, `save-optional`, `save-prod`, et al would indicate
+-// that they affect the `saveType` flat option.  Then the config.flat
+-// object has a `get saveType () { ... }` that looks at the "real"
+-// config settings from files etc and returns the appropriate value.
+-//
+-// Getters will also (maybe?) give us a hook to audit flat option
+-// usage, so we can document and group these more appropriately.
+-//
+-// This will be a problem with cases where we currently do:
+-// const opts = { ...npm.flatOptions, foo: 'bar' }, but we can maybe
+-// instead do `npm.config.set('foo', 'bar')` prior to passing the
+-// config object down where it needs to go.
+-//
+-// This way, when we go hunting for "where does saveType come from anyway!?"
+-// while fixing some Arborist bug, we won't have to hunt through too
+-// many places.
+-
+-// XXX: We should really deprecate all these `--save-blah` switches
+-// in favor of a single `--save-type` option.  The unfortunate shortcut
+-// we took for `--save-peer --save-optional` being `--save-type=peerOptional`
+-// makes this tricky, and likely a breaking change.
+-
+-// Define all config keys we know about.  They are indexed by their own key for
+-// ease of lookup later.  This duplication is an optimization so that we don't
+-// have to do an extra function call just to "reuse" the key in both places.
+-
+ const definitions = {
    _auth: new Definition('_auth', {
      default: null,
      type: [null, String],
@@ -575,9 +621,8 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      Note: This is NOT honored by other network related commands, eg
 -      \`dist-tags\`, \`owner\`, etc.
 -    `,
-+    description: '',
-     flatten,
-   }),
+-    flatten,
+-  }),
 -  editor: new Definition('editor', {
 -    default: editor,
 -    defaultDescription: `
@@ -766,10 +811,10 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      false results in no commit being made at all.
 -    `,
 -    flatten,
--  }),
--  global: new Definition('global', {
--    default: false,
--    type: Boolean,
+   }),
+   global: new Definition('global', {
+     default: false,
+     type: Boolean,
 -    short: 'g',
 -    description: `
 -      Operates in "global" mode, so that packages are installed into the
@@ -788,7 +833,7 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -        flatOptions.location = 'global'
 -      }
 -    },
--  }),
+   }),
    // the globalconfig has its default defined outside of this module
    globalconfig: new Definition('globalconfig', {
      type: path,
@@ -1162,12 +1207,13 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      The IP address of the local interface to use when making connections to
 -      the npm registry.  Must be IPv4 in versions of Node prior to 0.12.
 -    `,
-+    defaultDescription: '',
-+    description: '',
-     flatten,
+-    flatten,
    }),
    location: new Definition('location', {
-@@ -1176,21 +70,8 @@ const definitions = {
+     default: 'user',
+-    short: 'L',
+     type: [
+       'global',
        'user',
        'project',
      ],
@@ -1186,15 +1232,16 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      * bin files are linked to \`{prefix}/bin\`
 -      * man pages are linked to \`{prefix}/share/man\`
 -    `,
-+    defaultDescription: '',
-+    description: '',
-     flatten: (key, obj, flatOptions) => {
-       flatten(key, obj, flatOptions)
-       if (flatOptions.global) {
-@@ -1201,1111 +82,16 @@ const definitions = {
-       }
-     },
-   }),
+-    flatten: (key, obj, flatOptions) => {
+-      flatten(key, obj, flatOptions)
+-      if (flatOptions.global) {
+-        flatOptions.location = 'global'
+-      }
+-      if (obj.location === 'global') {
+-        flatOptions.global = true
+-      }
+-    },
+-  }),
 -  'lockfile-version': new Definition('lockfile-version', {
 -    default: null,
 -    type: [null, 1, 2, 3, '1', '2', '3'],
@@ -1530,10 +1577,10 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      look for updates immediately even for fresh package data.
 -    `,
 -    flatten,
--  }),
--  // `prefix` has its default defined outside of this module
--  prefix: new Definition('prefix', {
--    type: path,
+   }),
+   // `prefix` has its default defined outside of this module
+   prefix: new Definition('prefix', {
+     type: path,
 -    short: 'C',
 -    default: '',
 -    defaultDescription: `
@@ -1547,7 +1594,7 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -    `,
 -  }),
 -  preid: new Definition('preid', {
--    default: '',
+     default: '',
 -    hint: 'prerelease-id',
 -    type: String,
 -    description: `
@@ -1628,7 +1675,7 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      Rebuild bundled dependencies after installation.
 -    `,
 -    flatten,
--  }),
+   }),
    registry: new Definition('registry', {
      default: 'https://registry.npmjs.org/',
      type: url,
@@ -1983,9 +2030,8 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      Note that git requires you to have set up GPG keys in your git configs
 -      for this to work properly.
 -    `,
-+    description: '',
-     flatten,
-   }),
+-    flatten,
+-  }),
 -  'sign-git-tag': new Definition('sign-git-tag', {
 -    default: false,
 -    type: Boolean,
@@ -2175,7 +2221,7 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      // to process.env also doesn't work
 -      process.env.npm_config_user_agent = flatOptions.userAgent
 -    },
--  }),
+   }),
    userconfig: new Definition('userconfig', {
      default: '~/.npmrc',
      type: path,
@@ -2301,15 +2347,968 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..0b58000c3fb349bf09e73f753078e209
 -      Automatically answer "yes" to any prompts that npm might print on
 -      the command line.
 -    `,
-+    description: '',
    }),
  }
  
+diff --git a/lib/definitions/index.js b/lib/definitions/index.js
+index 793b71ea40d6f76ee5c6897ba43fd32ea6856056..d7718ffedcea83acd47ccda005819ebb797c04ff 100644
+--- a/lib/definitions/index.js
++++ b/lib/definitions/index.js
+@@ -1,14 +1,10 @@
+ const definitions = require('./definitions.js')
+ 
+-// use the defined flattening function, and copy over any scoped
+-// registries and registry-specific "nerfdart" configs verbatim
+-//
+-// TODO: make these getters so that we only have to make dirty
+-// the thing that changed, and then flatten the fields that
+-// could have changed when a config.set is called.
+-//
+-// TODO: move nerfdart auth stuff into a nested object that
+-// is only passed along to paths that end up calling npm-registry-fetch.
++/**
++ * use the defined flattening function, and copy over any scoped
++ * registries and registry-specific "nerfdart" configs verbatim
++ * @param {import('../index.js').DefinitionsObject} obj
++ */
+ const flatten = (obj, flat = {}) => {
+   for (const [key, val] of Object.entries(obj)) {
+     const def = definitions[key]
+@@ -21,60 +17,7 @@ const flatten = (obj, flat = {}) => {
+   return flat
+ }
+ 
+-const definitionProps = Object.entries(definitions)
+-  .reduce((acc, [key, { short = [], default: d }]) => {
+-  // can be either an array or string
+-    for (const s of [].concat(short)) {
+-      acc.shorthands[s] = [`--${key}`]
+-    }
+-    acc.defaults[key] = d
+-    return acc
+-  }, { shorthands: {}, defaults: {} })
+-
+-// aliases where they get expanded into a completely different thing
+-// these are NOT supported in the environment or npmrc files, only
+-// expanded on the CLI.
+-// TODO: when we switch off of nopt, use an arg parser that supports
+-// more reasonable aliasing and short opts right in the definitions set.
+-const shorthands = {
+-  'enjoy-by': ['--before'],
+-  d: ['--loglevel', 'info'],
+-  dd: ['--loglevel', 'verbose'],
+-  ddd: ['--loglevel', 'silly'],
+-  quiet: ['--loglevel', 'warn'],
+-  q: ['--loglevel', 'warn'],
+-  s: ['--loglevel', 'silent'],
+-  silent: ['--loglevel', 'silent'],
+-  verbose: ['--loglevel', 'verbose'],
+-  desc: ['--description'],
+-  help: ['--usage'],
+-  local: ['--no-global'],
+-  n: ['--no-yes'],
+-  no: ['--no-yes'],
+-  porcelain: ['--parseable'],
+-  readonly: ['--read-only'],
+-  reg: ['--registry'],
+-  iwr: ['--include-workspace-root'],
+-  ws: ['--workspaces'],
+-  ...definitionProps.shorthands,
+-}
+-
+-// These are the configs that we can nerf-dart. Only _auth even has a config definition so we have to explicitly validate them here.
+-// This is used to validate during "npm config set" and to not warn on loading unknown configs when we see these.
+-const nerfDarts = [
+-  '_auth', // Has a config
+-  '_authToken', // Does not have a config
+-  '_password', // Does not have a config
+-  'certfile', // Does not have a config
+-  'email', // Does not have a config
+-  'keyfile', // Does not have a config
+-  'username', // Does not have a config
+-]
+-
+ module.exports = {
+-  defaults: definitionProps.defaults,
+   definitions,
+   flatten,
+-  nerfDarts,
+-  shorthands,
+ }
+diff --git a/lib/index.d.ts b/lib/index.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..33e661e13095939796adc62cb7512e8ea5f1d5ea
+--- /dev/null
++++ b/lib/index.d.ts
+@@ -0,0 +1,170 @@
++/// <reference types="node" />
++
++export = Config;
++
++declare class Config<Definitions extends Config.DefinitionsObject = Config.DefinitionsObject> {
++    /**
++     * The prefix for `global` operations.  Set by the `prefix` config value,
++     * or defaults based on the location of the `execPath` option.
++     */
++    globalPrefix: string;
++    /**
++     * The prefix for `local` operations.  Set by the `prefix` config value on
++     * the CLI only, or defaults to either the `cwd` or its nearest ancestor
++     * containing a `node_modules` folder or `package.json` file.
++     */
++    localPrefix: string;
++    /**
++     * A read-only `Map` of the file (or a comment, if no file found, or
++     * relevant) to the config level loaded from that source.
++     */
++    sources: Map<string, Config.ConfType>;
++    /**
++     * A `Map` of config level to `ConfigData` objects.  These objects should
++     * not be modified directly under any circumstances.
++     */
++    data: Map<Config.ConfType, Config.ConfigData>;
++
++    /**
++     * A list sorted in priority of all the config data objects in the
++     * prototype chain.  `config.list[0]` is the `cli` level, `config.list[1]`
++     * is the `env` level, and so on.
++     */
++    list: Config.ConfigData[];
++    /** The `cwd` param */
++    cwd: string;
++    /** The `env` param */
++    env: NodeJS.ProcessEnv;
++    /** The `execPath` param */
++    execPath: string;
++    /** The `platform` param */
++    platform: NodeJS.Platform;
++
++    /** Default values of each definition */
++    defaults: { [K in keyof Definitions]: Definitions[K]["type"] };
++    /** The `types` param */
++    types: { [K in keyof Definitions]: Definitions[K]["type"] };
++    /** The `npmPath` param */
++    npmPath: string;
++    /** If `config.get('global')` is true, then `globalPrefix`, otherwise `localPrefix` */
++    readonly prefix: string;
++    /** The user's home directory, found by looking at `env.HOME` or calling `os.homedir()`. */
++    home: string | null;
++    /** A boolean indicating whether or not configs are loaded */
++    readonly loaded: boolean;
++    /**
++     * A getter that returns `true` if all the config objects are valid. Any
++     * data objects that have been modified with `config.set(...)` will be
++     * re-evaluated when `config.valid` is read.
++     */
++    readonly valid: boolean;
++
++    /**
++     * Returns a `config` object, which is not yet loaded.
++     */
++    constructor(options: Config.Options<Definitions>);
++
++    /**
++     * Load configuration from the various sources of information.
++     *
++     * Returns a `Promise` that resolves when configuration is loaded, and fails
++     * if a fatal error is encountered.
++     */
++    load(): Promise<void>;
++
++    /**
++     * Load the given key from the config stack.
++     */
++    get<K extends keyof Definitions>(key: K, where: Config.ConfType): Config.ConfigValueType<Definitions[K]["type"]>;
++    /**
++     * Verify that all known configuration options are set to valid values, and
++     * log a warning if they are invalid.
++     *
++     * Invalid auth options will cause this method to throw an error with a `code`
++     * property of `ERR_INVALID_AUTH`, and a `problems` property listing the specific
++     * concerns with the current configuration.
++     *
++     * If `where` is not set, then all config objects are validated.
++     *
++     * Returns `true` if all configs are valid.
++     *
++     * Note that it's usually enough (and more efficient) to just check
++     * `config.valid`, since each data object is marked for re-evaluation on every
++     * `config.set()` operation.
++     */
++    validate(where?: Config.ConfType): boolean;
++    /**
++     * Returns `true` if the value is coming directly from the
++     * default definitions, if the current value for the key config is
++     * coming from any other source, returns `false`.
++     */
++    isDefault(key: keyof Definitions): boolean;
++
++    getCredentialsByURI (uri: string): Config.Credentials;
++}
++
++declare namespace Config {
++    interface DefinitionsObject {
++        [key: string]: Definition;
++    }
++
++    interface TypeInfo<Type> {
++        type: Type;
++        description: string;
++    }
++    interface TypeDefs {
++        String: TypeInfo<StringConstructor>;
++        Boolean: TypeInfo<BooleanConstructor>;
++        url: TypeInfo<typeof import("url")>;
++        Number: TypeInfo<NumberConstructor>;
++        path: TypeInfo<typeof import("path")>;
++    }
++    interface Definition {
++        type: object | Array<object | string | null>;
++        default?: any;
++    }
++    type ConfigValueType<Def extends Definition["type"]> = Def extends string ? Def
++        : Def extends ReadonlyArray<infer T>
++            ? ArrayConstructor extends T ? _ConfigValueType<Exclude<T, ArrayConstructor>>
++            : _ConfigValueType<T>
++        : _ConfigValueType<Def>;
++    type _ConfigValueType<Def> = Def extends string | number | null ? Def
++        : Def extends StringConstructor | typeof import("url") | typeof import("path")
++            ? string
++        : Def extends BooleanConstructor ? boolean
++        : Def extends NumberConstructor ? number
++        : Def extends ArrayConstructor ? unknown[]
++        : unknown;
++
++    interface Options {
++        npmPath: string;
++
++        cwd?: string;
++        env?: NodeJS.ProcessEnv;
++        execPath?: string;
++        platform?: NodeJS.Platform;
++    }
++
++    type ConfFileType = "project" | "user" | "global";
++    type ConfType = "default" | "env" | "builtin" | ConfFileType;
++    interface ConfigData {
++        /** The source where this data was loaded from. */
++        source: string | null;
++        /** The raw data used to generate this config data, as it was parsed initially from the environment, config file, or CLI options. */
++        raw: Record<string, any>;
++        /** The data object reflecting the inheritance of configs up to this point in the chain. */
++        readonly data: Record<string, any>;
++        readonly valid: boolean;
++        /** Any errors encountered that prevented the loading of this config data. */
++        loadError: Error | null;
++    }
++
++    type Problem =
++        | { action: "delete"; key: string; where: ConfType }
++        | { action: "rename"; from: string; to: string; where: ConfType };
++
++    type BaseCredentials = { certfile?: string; keyfile?: string; };
++    type TokenCredentials = BaseCredentials & { token: string; };
++    type AuthCredentials = BaseCredentials & { username: string; password: string; auth: string };
++    type Credentials = TokenCredentials | AuthCredentials | BaseCredentials;
++}
+diff --git a/lib/index.js b/lib/index.js
+index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad72515b62 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -1,27 +1,19 @@
+ // TODO: set the scope config from package.json or explicit cli config
++/** @import Config from './index.js' */
++// @ts-ignore
+ const { walkUp } = require('walk-up-path')
+ const ini = require('ini')
+ const nopt = require('nopt')
+-const { log, time } = require('proc-log')
++// @ts-ignore
++const { log } = require('proc-log')
+ 
+ const { resolve, dirname, join } = require('node:path')
+ const { homedir } = require('node:os')
+ const {
+   readFile,
+-  writeFile,
+-  chmod,
+-  unlink,
+   stat,
+-  mkdir,
+ } = require('node:fs/promises')
+ 
+-// TODO global-prefix and local-prefix are set by lib/set-envs.js.  This may not be the best way to persist those, if we even want to persist them (see set-envs.js)
+-const internalEnv = [
+-  'npm-version',
+-  'global-prefix',
+-  'local-prefix',
+-]
+-
+ const fileExists = (...p) => stat(resolve(...p))
+   .then((st) => st.isFile())
+   .catch(() => false)
+@@ -37,75 +29,58 @@ const typeDefs = require('./type-defs.js')
+ const nerfDart = require('./nerf-dart.js')
+ const envReplace = require('./env-replace.js')
+ const parseField = require('./parse-field.js')
+-const setEnvs = require('./set-envs.js')
++// Provide these instead of passing through constructor
++const { definitions } = require('./definitions/index.js')
+ 
+-// types that can be saved back to
++/** types that can be saved back to @type {Set<Config.ConfFileType>} */
+ const confFileTypes = new Set([
+   'global',
+   'user',
+   'project',
+ ])
+ 
++/** @type {Set<Config.ConfType>} */
+ const confTypes = new Set([
+   'default',
+   'builtin',
+   ...confFileTypes,
+   'env',
+-  'cli',
++  // CLI logic removed
++  // 'cli',
+ ])
++/** highest precedence config type (since `cli` logic was removed) */
++const highestConfType = 'env'
+ 
+ class Config {
+   #loaded = false
+-  #flatten
+-  // populated the first time we flatten the object
+-  #flatOptions = null
+-
+-  static get typeDefs () {
+-    return typeDefs
+-  }
+ 
+   constructor ({
+-    definitions,
+-    shorthands,
+-    flatten,
+-    nerfDarts = [],
+     npmPath,
+ 
+     // options just to override in tests, mostly
+     env = process.env,
+-    argv = process.argv,
+     platform = process.platform,
+     execPath = process.execPath,
+     cwd = process.cwd(),
+-    excludeNpmCwd = false,
+   }) {
+-    this.nerfDarts = nerfDarts
+-    this.definitions = definitions
+     // turn the definitions into nopt's weirdo syntax
++    /** @type {Record<string, Object>} */
+     const types = {}
++    /** @type {Record<string, any>} */
+     const defaults = {}
+-    this.deprecated = {}
+     for (const [key, def] of Object.entries(definitions)) {
+       defaults[key] = def.default
+       types[key] = def.type
+-      if (def.deprecated) {
+-        this.deprecated[key] = def.deprecated.trim().replace(/\n +/, '\n')
+-      }
+     }
+ 
+-    this.#flatten = flatten
+     this.types = types
+-    this.shorthands = shorthands
+     this.defaults = defaults
+ 
+     this.npmPath = npmPath
+-    this.npmBin = join(this.npmPath, 'bin/npm-cli.js')
+-    this.argv = argv
+     this.env = env
+     this.execPath = execPath
+     this.platform = platform
+     this.cwd = cwd
+-    this.excludeNpmCwd = excludeNpmCwd
+ 
+     // set when we load configs
+     this.globalPrefix = null
+@@ -117,6 +92,7 @@ class Config {
+ 
+     // set up the prototype chain of config objects
+     const wheres = [...confTypes]
++    /** @type {Map<Config.ConfType, Config.ConfigData>} */
+     this.data = new Map()
+     let parent = null
+     for (const where of wheres) {
+@@ -149,23 +125,10 @@ class Config {
+     return this.#get('global') ? this.globalPrefix : this.localPrefix
+   }
+ 
+-  // return the location where key is found.
+-  find (key) {
+-    if (!this.loaded) {
+-      throw new Error('call config.load() before reading values')
+-    }
+-
+-    // have to look in reverse order
+-    const entries = [...this.data.entries()]
+-    for (let i = entries.length - 1; i > -1; i--) {
+-      const [where, { data }] = entries[i]
+-      if (hasOwnProperty(data, key)) {
+-        return where
+-      }
+-    }
+-    return null
+-  }
+-
++  /**
++   * @param {Config.ConfType|null} [where] Get values from only this location if specified.
++   * Otherwise checks up the prototype chain in order of precedence.
++   */
+   get (key, where) {
+     if (!this.loaded) {
+       throw new Error('call config.load() before reading values')
+@@ -175,68 +138,19 @@ class Config {
+ 
+   // we need to get values sometimes, so use this internal one to do so
+   // while in the process of loading.
++  /**
++   * @param {Config.ConfType|null} [where] Get values from only this location if specified.
++   * Otherwise checks up the prototype chain in order of precedence.
++   */
+   #get (key, where = null) {
+     if (where !== null && !confTypes.has(where)) {
+       throw new Error('invalid config location param: ' + where)
+     }
+-    const { data } = this.data.get(where || 'cli')
++    const { data } = this.data.get(where || highestConfType)
++    // this will return values up the prototype chain
+     return where === null || hasOwnProperty(data, key) ? data[key] : undefined
+   }
+ 
+-  set (key, val, where = 'cli') {
+-    if (!this.loaded) {
+-      throw new Error('call config.load() before setting values')
+-    }
+-    if (!confTypes.has(where)) {
+-      throw new Error('invalid config location param: ' + where)
+-    }
+-    this.#checkDeprecated(key)
+-    const { data, raw } = this.data.get(where)
+-    data[key] = val
+-    if (['global', 'user', 'project'].includes(where)) {
+-      raw[key] = val
+-    }
+-
+-    // this is now dirty, the next call to this.valid will have to check it
+-    this.data.get(where)[_valid] = null
+-
+-    // the flat options are invalidated, regenerate next time they're needed
+-    this.#flatOptions = null
+-  }
+-
+-  get flat () {
+-    if (this.#flatOptions) {
+-      return this.#flatOptions
+-    }
+-
+-    // create the object for flat options passed to deps
+-    const timeEnd = time.start('config:load:flatten')
+-    this.#flatOptions = {}
+-    // walk from least priority to highest
+-    for (const { data } of this.data.values()) {
+-      this.#flatten(data, this.#flatOptions)
+-    }
+-    this.#flatOptions.nodeBin = this.execPath
+-    this.#flatOptions.npmBin = this.npmBin
+-    timeEnd()
+-
+-    return this.#flatOptions
+-  }
+-
+-  delete (key, where = 'cli') {
+-    if (!this.loaded) {
+-      throw new Error('call config.load() before deleting values')
+-    }
+-    if (!confTypes.has(where)) {
+-      throw new Error('invalid config location param: ' + where)
+-    }
+-    const { data, raw } = this.data.get(where)
+-    delete data[key]
+-    if (['global', 'user', 'project'].includes(where)) {
+-      delete raw[key]
+-    }
+-  }
+-
+   async load () {
+     if (this.loaded) {
+       throw new Error('attempting to load npm config multiple times')
+@@ -249,7 +163,6 @@ class Config {
+     await this.loadBuiltinConfig()
+ 
+     // cli and env are not async, and can set the prefix, relevant to project
+-    this.loadCLI()
+     this.loadEnv()
+ 
+     // next project config, which can affect userconfig location
+@@ -267,8 +180,6 @@ class Config {
+ 
+     // set proper globalPrefix now that everything is loaded
+     this.globalPrefix = this.get('prefix')
+-
+-    this.setEnvs()
+   }
+ 
+   loadDefaults () {
+@@ -355,24 +266,6 @@ class Config {
+     this.#loadObject(conf, 'env', 'environment')
+   }
+ 
+-  loadCLI () {
+-    for (const s of Object.keys(this.shorthands)) {
+-      if (s.length > 1 && this.argv.includes(`-${s}`)) {
+-        log.warn(`-${s} is not a valid single-hyphen cli flag and will be removed in the future`)
+-      }
+-    }
+-    nopt.invalidHandler = (k, val, type) =>
+-      this.invalidHandler(k, val, type, 'command line options', 'cli')
+-    nopt.unknownHandler = this.unknownHandler
+-    nopt.abbrevHandler = this.abbrevHandler
+-    const conf = nopt(this.types, this.shorthands, this.argv)
+-    nopt.invalidHandler = null
+-    nopt.unknownHandler = null
+-    this.parsedArgv = conf.argv
+-    delete conf.argv
+-    this.#loadObject(conf, 'cli', 'command line options')
+-  }
+-
+   get valid () {
+     for (const [where, { valid }] of this.data.entries()) {
+       if (valid === false || valid === null && !this.validate(where)) {
+@@ -382,6 +275,7 @@ class Config {
+     return true
+   }
+ 
++  /** @param {Config.ConfType} [where] */
+   validate (where) {
+     if (!where) {
+       let valid = true
+@@ -390,7 +284,7 @@ class Config {
+       for (const entryWhere of this.data.keys()) {
+         // no need to validate our defaults, we know they're fine
+         // cli was already validated when parsed the first time
+-        if (entryWhere === 'default' || entryWhere === 'builtin' || entryWhere === 'cli') {
++        if (entryWhere === 'default' || entryWhere === 'builtin') {
+           continue
+         }
+         const ret = this.validate(entryWhere)
+@@ -443,51 +337,18 @@ class Config {
+       const obj = this.data.get(where)
+       obj[_valid] = true
+ 
++      // @ts-ignore
+       nopt.invalidHandler = (k, val, type) =>
+         this.invalidHandler(k, val, type, obj.source, where)
+ 
+       nopt.clean(obj.data, this.types, typeDefs)
+ 
++      // @ts-ignore
+       nopt.invalidHandler = null
+       return obj[_valid]
+     }
+   }
+ 
+-  // fixes problems identified by validate(), accepts the 'problems' property from a thrown
+-  // ErrInvalidAuth to avoid having to check everything again
+-  repair (problems) {
+-    if (!problems) {
+-      try {
+-        this.validate()
+-      } catch (err) {
+-        // coverage skipped here because we don't need to test re-throwing an error
+-        // istanbul ignore next
+-        if (err.code !== 'ERR_INVALID_AUTH') {
+-          throw err
+-        }
+-
+-        problems = err.problems
+-      } finally {
+-        if (!problems) {
+-          problems = []
+-        }
+-      }
+-    }
+-
+-    for (const problem of problems) {
+-      // coverage disabled for else branch because it doesn't do anything and shouldn't
+-      // istanbul ignore else
+-      if (problem.action === 'delete') {
+-        this.delete(problem.key, problem.where)
+-      } else if (problem.action === 'rename') {
+-        const raw = this.data.get(problem.where).raw?.[problem.from]
+-        const calculated = this.get(problem.from, problem.where)
+-        this.set(problem.to, raw || calculated, problem.where)
+-        this.delete(problem.from, problem.where)
+-      }
+-    }
+-  }
+-
+   // Returns true if the value is coming directly from the source defined
+   // in default definitions, if the current value for the key config is
+   // coming from any other different source, returns false
+@@ -503,60 +364,19 @@ class Config {
+   }
+ 
+   invalidHandler (k, val, type, source, where) {
+-    const typeDescription = require('./type-description.js')
+     log.warn(
+       'invalid config',
+       k + '=' + JSON.stringify(val),
+       `set in ${source}`
+     )
+     this.data.get(where)[_valid] = false
+-
+-    if (Array.isArray(type)) {
+-      if (type.includes(typeDefs.url.type)) {
+-        type = typeDefs.url.type
+-      } else {
+-        /* istanbul ignore if - no actual configs matching this, but
+-         * path types SHOULD be handled this way, like URLs, for the
+-         * same reason */
+-        if (type.includes(typeDefs.path.type)) {
+-          type = typeDefs.path.type
+-        }
+-      }
+-    }
+-
+-    const typeDesc = typeDescription(type)
+-    const mustBe = typeDesc
+-      .filter(m => m !== undefined && m !== Array)
+-    const msg = 'Must be' + this.#getOneOfKeywords(mustBe, typeDesc)
+-    const desc = mustBe.length === 1 ? mustBe[0]
+-      : [...new Set(mustBe.map(n => typeof n === 'string' ? n : JSON.stringify(n)))].join(', ')
+-    log.warn('invalid config', msg, desc)
+-  }
+-
+-  abbrevHandler (short, long) {
+-    log.warn(`Expanding --${short} to --${long}. This will stop working in the next major version of npm.`)
+-  }
+-
+-  unknownHandler (key, next) {
+-    if (next) {
+-      log.warn(`"${next}" is being parsed as a normal command line argument.`)
+-    }
+-  }
+-
+-  #getOneOfKeywords (mustBe, typeDesc) {
+-    let keyword
+-    if (mustBe.length === 1 && typeDesc.includes(Array)) {
+-      keyword = ' one or more'
+-    } else if (mustBe.length > 1 && typeDesc.includes(Array)) {
+-      keyword = ' one or more of:'
+-    } else if (mustBe.length > 1) {
+-      keyword = ' one of:'
+-    } else {
+-      keyword = ''
+-    }
+-    return keyword
++    // removed logging of expected type
+   }
+ 
++  /**
++   * @param {Config.ConfType} where
++   * @param {string} source file name or source description
++   */
+   #loadObject (obj, where, source, er = null) {
+     // obj is the raw data read from the file
+     const conf = this.data.get(where)
+@@ -584,51 +404,21 @@ class Config {
+       for (const [key, value] of Object.entries(obj)) {
+         const k = envReplace(key, this.env)
+         const v = this.parseField(value, k)
+-        if (where !== 'default') {
+-          this.#checkDeprecated(k)
+-          if (this.definitions[key]?.exclusive) {
+-            for (const exclusive of this.definitions[key].exclusive) {
+-              if (!this.isDefault(exclusive)) {
+-                throw new TypeError(`--${key} can not be provided when using --${exclusive}`)
+-              }
+-            }
+-          }
+-        }
+-        if (where !== 'default' || key === 'npm-version') {
+-          this.checkUnknown(where, key)
+-        }
++        // removed deprecated, exclusive, unknown checks
+         conf.data[k] = v
+       }
+     }
+   }
+ 
+-  checkUnknown (where, key) {
+-    if (!this.definitions[key]) {
+-      if (internalEnv.includes(key)) {
+-        return
+-      }
+-      if (!key.includes(':')) {
+-        log.warn(`Unknown ${where} config "${where === 'cli' ? '--' : ''}${key}". This will stop working in the next major version of npm.`)
+-        return
+-      }
+-      const baseKey = key.split(':').pop()
+-      if (!this.definitions[baseKey] && !this.nerfDarts.includes(baseKey)) {
+-        log.warn(`Unknown ${where} config "${baseKey}" (${key}). This will stop working in the next major version of npm.`)
+-      }
+-    }
+-  }
+-
+-  #checkDeprecated (key) {
+-    if (this.deprecated[key]) {
+-      log.warn('config', key, this.deprecated[key])
+-    }
+-  }
+-
+   // Parse a field, coercing it to the best type available.
+   parseField (f, key, listElement = false) {
+     return parseField(f, key, this, listElement)
+   }
+ 
++  /**
++   * @param {string} file
++   * @param {Config.ConfType} type
++   */
+   async #loadFile (file, type) {
+     // only catch the error from readFile, not from the loadObject call
+     log.silly('config', `load:file:${file}`)
+@@ -683,34 +473,23 @@ class Config {
+   }
+ 
+   async loadLocalPrefix () {
+-    const cliPrefix = this.#get('prefix', 'cli')
+-    if (cliPrefix) {
+-      this.localPrefix = cliPrefix
+-      return
+-    }
+-
+-    const cliWorkspaces = this.#get('workspaces', 'cli')
+     const isGlobal = this.#get('global') || this.#get('location') === 'global'
+ 
+     for (const p of walkUp(this.cwd)) {
+-      // HACK: this is an option set in tests to stop the local prefix from being set
+-      // on tests that are created inside the npm repo
+-      if (this.excludeNpmCwd && p === this.npmPath) {
+-        break
+-      }
+-
+       const hasPackageJson = await fileExists(p, 'package.json')
+ 
+       if (!this.localPrefix && (hasPackageJson || await dirExists(p, 'node_modules'))) {
++        // `p` is a package folder, and we're setting localPrefix for the first time
+         this.localPrefix = p
+         this.localPackage = hasPackageJson
+ 
+-        // if workspaces are disabled, or we're in global mode, return now
+-        if (cliWorkspaces === false || isGlobal) {
++        // if we're in global mode, return now
++        if (isGlobal) {
+           return
+         }
+ 
+         // otherwise, continue the loop
++        // (have to keep searching up to see if we're in a workspace)
+         continue
+       }
+ 
+@@ -720,6 +499,7 @@ class Config {
+         // then we need to see if `p` is a workspace root by reading its package.json
+         // however, if reading it fails then we should just move on
+         const { content: pkg } = await pkgJson.normalize(p).catch(() => ({ content: {} }))
++        // @ts-ignore
+         if (!pkg?.workspaces) {
+           continue
+         }
+@@ -733,9 +513,7 @@ class Config {
+               log.warn('config', `ignoring workspace config at ${this.localPrefix}/.npmrc`)
+             }
+ 
+-            // set the workspace in the default layer, which allows it to be overridden easily
+-            const { data } = this.data.get('default')
+-            data.workspace = [this.localPrefix]
++            // (removed saving the 'workspace' path config value)
+             this.localPrefix = p
+             this.localPackage = hasPackageJson
+             log.info('config', `found workspace root at ${this.localPrefix}`)
+@@ -759,120 +537,11 @@ class Config {
+     return this.#loadFile(this.#get('globalconfig'), 'global')
+   }
+ 
+-  async save (where) {
+-    if (!this.loaded) {
+-      throw new Error('call config.load() before saving')
+-    }
+-    if (!confFileTypes.has(where)) {
+-      throw new Error('invalid config location param: ' + where)
+-    }
+-
+-    const conf = this.data.get(where)
+-    conf[_loadError] = null
+-
+-    if (where === 'user') {
+-      // if email is nerfed, then we want to de-nerf it
+-      const nerfed = nerfDart(this.get('registry'))
+-      const email = this.get(`${nerfed}:email`, 'user')
+-      if (email) {
+-        this.delete(`${nerfed}:email`, 'user')
+-        this.set('email', email, 'user')
+-      }
+-    }
+-
+-    // We need the actual raw data before we called parseField so that we are
+-    // saving the same content back to the file
+-    const iniData = ini.stringify(conf.raw).trim() + '\n'
+-    if (!iniData.trim()) {
+-      // ignore the unlink error (eg, if file doesn't exist)
+-      await unlink(conf.source).catch(() => {})
+-      return
+-    }
+-    const dir = dirname(conf.source)
+-    await mkdir(dir, { recursive: true })
+-    await writeFile(conf.source, iniData, 'utf8')
+-    const mode = where === 'user' ? 0o600 : 0o666
+-    await chmod(conf.source, mode)
+-  }
+-
+-  clearCredentialsByURI (uri, level = 'user') {
+-    const nerfed = nerfDart(uri)
+-    const def = nerfDart(this.get('registry'))
+-    if (def === nerfed) {
+-      this.delete(`-authtoken`, level)
+-      this.delete(`_authToken`, level)
+-      this.delete(`_authtoken`, level)
+-      this.delete(`_auth`, level)
+-      this.delete(`_password`, level)
+-      this.delete(`username`, level)
+-      // de-nerf email if it's nerfed to the default registry
+-      const email = this.get(`${nerfed}:email`, level)
+-      if (email) {
+-        this.set('email', email, level)
+-      }
+-    }
+-    this.delete(`${nerfed}:_authToken`, level)
+-    this.delete(`${nerfed}:_auth`, level)
+-    this.delete(`${nerfed}:_password`, level)
+-    this.delete(`${nerfed}:username`, level)
+-    this.delete(`${nerfed}:email`, level)
+-    this.delete(`${nerfed}:certfile`, level)
+-    this.delete(`${nerfed}:keyfile`, level)
+-  }
+-
+-  setCredentialsByURI (uri, { token, username, password, certfile, keyfile }) {
+-    const nerfed = nerfDart(uri)
+-
+-    // field that hasn't been used as documented for a LONG time,
+-    // and as of npm 7.10.0, isn't used at all.  We just always
+-    // send auth if we have it, only to the URIs under the nerf dart.
+-    this.delete(`${nerfed}:always-auth`, 'user')
+-
+-    this.delete(`${nerfed}:email`, 'user')
+-    if (certfile && keyfile) {
+-      this.set(`${nerfed}:certfile`, certfile, 'user')
+-      this.set(`${nerfed}:keyfile`, keyfile, 'user')
+-      // cert/key may be used in conjunction with other credentials, thus no `else`
+-    }
+-    if (token) {
+-      this.set(`${nerfed}:_authToken`, token, 'user')
+-      this.delete(`${nerfed}:_password`, 'user')
+-      this.delete(`${nerfed}:username`, 'user')
+-    } else if (username || password) {
+-      if (!username) {
+-        throw new Error('must include username')
+-      }
+-      if (!password) {
+-        throw new Error('must include password')
+-      }
+-      this.delete(`${nerfed}:_authToken`, 'user')
+-      this.set(`${nerfed}:username`, username, 'user')
+-      // note: not encrypted, no idea why we bothered to do this, but oh well
+-      // protects against shoulder-hacks if password is memorable, I guess?
+-      const encoded = Buffer.from(password, 'utf8').toString('base64')
+-      this.set(`${nerfed}:_password`, encoded, 'user')
+-    } else if (!certfile || !keyfile) {
+-      throw new Error('No credentials to set.')
+-    }
+-  }
+-
+   // this has to be a bit more complicated to support legacy data of all forms
+   getCredentialsByURI (uri) {
+     const nerfed = nerfDart(uri)
+-    const def = nerfDart(this.get('registry'))
+     const creds = {}
+ 
+-    // email is handled differently, it used to always be nerfed and now it never should be
+-    // if it's set nerfed to the default registry, then we copy it to the unnerfed key
+-    // TODO: evaluate removing 'email' from the credentials object returned here
+-    const email = this.get(`${nerfed}:email`) || this.get('email')
+-    if (email) {
+-      if (nerfed === def) {
+-        this.set('email', email, 'user')
+-      }
+-      creds.email = email
+-    }
+-
+     const certfileReg = this.get(`${nerfed}:certfile`)
+     const keyfileReg = this.get(`${nerfed}:keyfile`)
+     if (certfileReg && keyfileReg) {
+@@ -910,25 +579,20 @@ class Config {
+     // at this point, nothing else is usable so just return what we do have
+     return creds
+   }
+-
+-  // set up the environment object we have with npm_config_* environs
+-  // for all configs that are different from their default values, and
+-  // set EDITOR and HOME.
+-  setEnvs () {
+-    setEnvs(this)
+-  }
+ }
+ 
+ const _loadError = Symbol('loadError')
+ const _valid = Symbol('valid')
+ 
++/** @implements {Config.ConfigData} */
+ class ConfigData {
+   #data
++  /** @type {string|null} */
+   #source = null
+-  #raw = null
++  #raw = {}
+   constructor (parent) {
++    // NOTE: prototype inheritance of parent data
+     this.#data = Object.create(parent && parent.data)
+-    this.#raw = {}
+     this[_valid] = true
+   }
+ 
+diff --git a/lib/nerf-dart.js b/lib/nerf-dart.js
+index 030d92a82270d2b125b16ee64590b68c05440160..d92c461b53a66db00bbbeb34fb9a517a5a190100 100644
+--- a/lib/nerf-dart.js
++++ b/lib/nerf-dart.js
+@@ -1,7 +1,7 @@
+ const { URL } = require('node:url')
+ 
+ /**
+- * Maps a URL to an identifier.
++ * Maps a URL to an "identifier" (URL with no protocol, only host and pathname)
+  *
+  * Name courtesy schiffertronix media LLC, a New Jersey corporation
+  *
 diff --git a/lib/parse-field.js b/lib/parse-field.js
-index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..943f7db1367003d998ad61dc83d607ea017cf808 100644
+index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..9bd2a4feb7795bb39ed837824f5aaccaef9df06e 100644
 --- a/lib/parse-field.js
 +++ b/lib/parse-field.js
-@@ -3,8 +3,6 @@ const typeDefs = require('./type-defs.js')
+@@ -1,10 +1,7 @@
+ // Parse a field, coercing it to the best type available.
+-const typeDefs = require('./type-defs.js')
  const envReplace = require('./env-replace.js')
  const { resolve } = require('node:path')
  
@@ -2318,15 +3317,29 @@ index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..943f7db1367003d998ad61dc83d607ea
  const parseField = (f, key, opts, listElement = false) => {
    if (typeof f !== 'string' && !Array.isArray(f)) {
      return f
-@@ -17,7 +15,6 @@ const parseField = (f, key, opts, listElement = false) => {
+@@ -17,10 +14,8 @@ const parseField = (f, key, opts, listElement = false) => {
    const isPath = typeList.has(typeDefs.path.type)
    const isBool = typeList.has(typeDefs.Boolean.type)
    const isString = isPath || typeList.has(typeDefs.String.type)
 -  const isUmask = typeList.has(typeDefs.Umask.type)
    const isNumber = typeList.has(typeDefs.Number.type)
    const isList = !listElement && typeList.has(Array)
-   const isDate = typeList.has(typeDefs.Date.type)
-@@ -67,15 +64,6 @@ const parseField = (f, key, opts, listElement = false) => {
+-  const isDate = typeList.has(typeDefs.Date.type)
+ 
+   if (Array.isArray(f)) {
+     return !isList ? f : f.map(field => parseField(field, key, opts, true))
+@@ -54,10 +49,6 @@ const parseField = (f, key, opts, listElement = false) => {
+ 
+   f = envReplace(f, env)
+ 
+-  if (isDate) {
+-    return new Date(f)
+-  }
+-
+   if (isPath) {
+     const homePattern = platform === 'win32' ? /^~(\/|\\)/ : /^~\//
+     if (homePattern.test(f) && home) {
+@@ -67,15 +58,6 @@ const parseField = (f, key, opts, listElement = false) => {
      }
    }
  
@@ -2342,8 +3355,18 @@ index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..943f7db1367003d998ad61dc83d607ea
    if (isNumber && !isNaN(f)) {
      f = +f
    }
+diff --git a/lib/set-envs.js b/lib/set-envs.js
+index 30e175dae867f21f370dcdfd2057bb53e8b47a38..7351cc51ffe9011e3950a8584e1e75250e420414 100644
+--- a/lib/set-envs.js
++++ b/lib/set-envs.js
+@@ -1,3 +1,5 @@
++// UNUSED FILE
++
+ // Set environment variables for any non-default configs,
+ // so that they're already there when we run lifecycle scripts.
+ //
 diff --git a/lib/type-defs.js b/lib/type-defs.js
-index 3c9dfe19ded113e972edbd3d9b6c833f9d6e5033..c7c6fa8ea20cb38f61066c35861b78f87cc8d9d8 100644
+index 3c9dfe19ded113e972edbd3d9b6c833f9d6e5033..520aac06899355b30d0554199846bc9ac3dba411 100644
 --- a/lib/type-defs.js
 +++ b/lib/type-defs.js
 @@ -1,18 +1,5 @@
@@ -2365,7 +3388,7 @@ index 3c9dfe19ded113e972edbd3d9b6c833f9d6e5033..c7c6fa8ea20cb38f61066c35861b78f8
  const noptValidatePath = nopt.typeDefs.path.validate
  const validatePath = (data, k, val) => {
    if (typeof val !== 'string') {
-@@ -24,16 +11,6 @@ const validatePath = (data, k, val) => {
+@@ -24,36 +11,9 @@ const validatePath = (data, k, val) => {
  // add descriptions so we can validate more usefully
  module.exports = {
    ...nopt.typeDefs,
@@ -2379,6 +3402,58 @@ index 3c9dfe19ded113e972edbd3d9b6c833f9d6e5033..c7c6fa8ea20cb38f61066c35861b78f8
 -    validate: validateUmask,
 -    description: 'octal number in range 0o000..0o777 (0..511)',
 -  },
-   url: {
-     ...nopt.typeDefs.url,
-     description: 'full url with "http://"',
+-  url: {
+-    ...nopt.typeDefs.url,
+-    description: 'full url with "http://"',
+-  },
+   path: {
+     ...nopt.typeDefs.path,
+     validate: validatePath,
+-    description: 'valid filesystem path',
+-  },
+-  Number: {
+-    ...nopt.typeDefs.Number,
+-    description: 'numeric value',
+-  },
+-  Boolean: {
+-    ...nopt.typeDefs.Boolean,
+-    description: 'boolean value (true or false)',
+-  },
+-  Date: {
+-    ...nopt.typeDefs.Date,
+-    description: 'valid Date string',
+   },
+ }
+ 
+diff --git a/lib/type-description.js b/lib/type-description.js
+index f5e0d164f9edcfb6bc3a963b47cd39641f9ebfa1..451d8ec49204224c1fd59e850a39a20f7ff09e48 100644
+--- a/lib/type-description.js
++++ b/lib/type-description.js
+@@ -1,3 +1,5 @@
++// UNUSED FILE
++
+ // return the description of the valid values of a field
+ // returns a string for one thing, or an array of descriptions
+ const typeDefs = require('./type-defs.js')
+diff --git a/lib/umask.js b/lib/umask.js
+index 2ddc5ca782232615eee4b3fd88054594ce5f5370..025d09904a3d9e557672dd5348be2461231bd8f5 100644
+--- a/lib/umask.js
++++ b/lib/umask.js
+@@ -1,3 +1,5 @@
++// UNUSED FILE
++
+ const parse = val => {
+   // this is run via nopt and parse field where everything is
+   // converted to a string first, ignoring coverage for now
+diff --git a/package.json b/package.json
+index 5cb8925d4cf4bcdbbe3845a563270ec24f201540..5a81063b5ac700f059402a7d2e18dced91664c39 100644
+--- a/package.json
++++ b/package.json
+@@ -6,6 +6,7 @@
+     "lib/"
+   ],
+   "main": "lib/index.js",
++  "types": "lib/index.d.ts",
+   "description": "Configuration management for the npm cli",
+   "repository": {
+     "type": "git",

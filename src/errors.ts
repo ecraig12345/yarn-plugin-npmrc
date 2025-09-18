@@ -1,6 +1,5 @@
 import { MessageName, ReportError } from '@yarnpkg/core';
-
-export const pluginName = 'yarn-plugin-npmrc';
+import { pluginName } from './constants';
 
 /**
  * Throw an error with a prefix with the plugin name.
