@@ -31,8 +31,5 @@
     "printWidth": 100,
     "singleQuote": true
   },
-  "packageManager": "yarn@4.9.4",
-  "resolutions": {
-    "@npmcli/package-json": "patch:@npmcli/package-json@npm%3A6.2.0#~/.yarn/patches/@npmcli-package-json-npm-6.2.0-6ed662ce85.patch"
-  }
+  "packageManager": "yarn@4.9.4"
 }

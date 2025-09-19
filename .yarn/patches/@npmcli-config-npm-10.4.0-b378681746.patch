@@ -2437,10 +2437,10 @@ index 793b71ea40d6f76ee5c6897ba43fd32ea6856056..d7718ffedcea83acd47ccda005819ebb
  }
 diff --git a/lib/index.d.ts b/lib/index.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..33e661e13095939796adc62cb7512e8ea5f1d5ea
+index 0000000000000000000000000000000000000000..90726b2979e9e65bf7177caf28eb8b0538318f41
 --- /dev/null
 +++ b/lib/index.d.ts
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,175 @@
 +/// <reference types="node" />
 +
 +export = Config;
@@ -2582,6 +2582,11 @@ index 0000000000000000000000000000000000000000..33e661e13095939796adc62cb7512e8e
 +    interface Options {
 +        npmPath: string;
 +
++        /** PATCH: Root of the whole project (location of lock file and root `package.json`) */
++        projectRoot: string;
++        /** PATCH: Root of the current workspace/package (may be same as `projectRoot`) */
++        workspaceRoot: string;
++
 +        cwd?: string;
 +        env?: NodeJS.ProcessEnv;
 +        execPath?: string;
@@ -2612,14 +2617,14 @@ index 0000000000000000000000000000000000000000..33e661e13095939796adc62cb7512e8e
 +    type Credentials = TokenCredentials | AuthCredentials | BaseCredentials;
 +}
 diff --git a/lib/index.js b/lib/index.js
-index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad72515b62 100644
+index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44a1948d6e 100644
 --- a/lib/index.js
 +++ b/lib/index.js
-@@ -1,27 +1,19 @@
+@@ -1,27 +1,18 @@
  // TODO: set the scope config from package.json or explicit cli config
+-const { walkUp } = require('walk-up-path')
 +/** @import Config from './index.js' */
 +// @ts-ignore
- const { walkUp } = require('walk-up-path')
  const ini = require('ini')
  const nopt = require('nopt')
 -const { log, time } = require('proc-log')
@@ -2647,7 +2652,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
  const fileExists = (...p) => stat(resolve(...p))
    .then((st) => st.isFile())
    .catch(() => false)
-@@ -37,75 +29,58 @@ const typeDefs = require('./type-defs.js')
+@@ -37,86 +28,80 @@ const typeDefs = require('./type-defs.js')
  const nerfDart = require('./nerf-dart.js')
  const envReplace = require('./env-replace.js')
  const parseField = require('./parse-field.js')
@@ -2685,6 +2690,8 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
 -  static get typeDefs () {
 -    return typeDefs
 -  }
++  #projectRoot = ''
++  #workspaceRoot = ''
  
    constructor ({
 -    definitions,
@@ -2692,6 +2699,8 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
 -    flatten,
 -    nerfDarts = [],
      npmPath,
++    projectRoot,
++    workspaceRoot,
  
      // options just to override in tests, mostly
      env = process.env,
@@ -2703,6 +2712,13 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    }) {
 -    this.nerfDarts = nerfDarts
 -    this.definitions = definitions
++    if (!projectRoot || !workspaceRoot) {
++      throw new Error('must provide projectRoot and workspaceRoot options')
++    }
++
++    this.#projectRoot = projectRoot
++    this.#workspaceRoot = workspaceRoot
++
      // turn the definitions into nopt's weirdo syntax
 +    /** @type {Record<string, Object>} */
      const types = {}
@@ -2733,7 +2749,11 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
  
      // set when we load configs
      this.globalPrefix = null
-@@ -117,6 +92,7 @@ class Config {
+     this.localPrefix = null
+-    this.localPackage = null
+ 
+     // defaults to env.HOME, but will always be *something*
+     this.home = null
  
      // set up the prototype chain of config objects
      const wheres = [...confTypes]
@@ -2741,7 +2761,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
      this.data = new Map()
      let parent = null
      for (const where of wheres) {
-@@ -149,23 +125,10 @@ class Config {
+@@ -149,23 +134,10 @@ class Config {
      return this.#get('global') ? this.globalPrefix : this.localPrefix
    }
  
@@ -2769,7 +2789,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    get (key, where) {
      if (!this.loaded) {
        throw new Error('call config.load() before reading values')
-@@ -175,68 +138,19 @@ class Config {
+@@ -175,68 +147,19 @@ class Config {
  
    // we need to get values sometimes, so use this internal one to do so
    // while in the process of loading.
@@ -2844,7 +2864,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    async load () {
      if (this.loaded) {
        throw new Error('attempting to load npm config multiple times')
-@@ -249,7 +163,6 @@ class Config {
+@@ -249,7 +172,6 @@ class Config {
      await this.loadBuiltinConfig()
  
      // cli and env are not async, and can set the prefix, relevant to project
@@ -2852,7 +2872,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
      this.loadEnv()
  
      // next project config, which can affect userconfig location
-@@ -267,8 +180,6 @@ class Config {
+@@ -267,8 +189,6 @@ class Config {
  
      // set proper globalPrefix now that everything is loaded
      this.globalPrefix = this.get('prefix')
@@ -2861,7 +2881,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    }
  
    loadDefaults () {
-@@ -355,24 +266,6 @@ class Config {
+@@ -355,24 +275,6 @@ class Config {
      this.#loadObject(conf, 'env', 'environment')
    }
  
@@ -2886,7 +2906,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    get valid () {
      for (const [where, { valid }] of this.data.entries()) {
        if (valid === false || valid === null && !this.validate(where)) {
-@@ -382,6 +275,7 @@ class Config {
+@@ -382,6 +284,7 @@ class Config {
      return true
    }
  
@@ -2894,7 +2914,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    validate (where) {
      if (!where) {
        let valid = true
-@@ -390,7 +284,7 @@ class Config {
+@@ -390,7 +293,7 @@ class Config {
        for (const entryWhere of this.data.keys()) {
          // no need to validate our defaults, we know they're fine
          // cli was already validated when parsed the first time
@@ -2903,7 +2923,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
            continue
          }
          const ret = this.validate(entryWhere)
-@@ -443,51 +337,18 @@ class Config {
+@@ -443,51 +346,18 @@ class Config {
        const obj = this.data.get(where)
        obj[_valid] = true
  
@@ -2957,7 +2977,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    // Returns true if the value is coming directly from the source defined
    // in default definitions, if the current value for the key config is
    // coming from any other different source, returns false
-@@ -503,60 +364,19 @@ class Config {
+@@ -503,60 +373,19 @@ class Config {
    }
  
    invalidHandler (k, val, type, source, where) {
@@ -3023,7 +3043,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    #loadObject (obj, where, source, er = null) {
      // obj is the raw data read from the file
      const conf = this.data.get(where)
-@@ -584,51 +404,21 @@ class Config {
+@@ -584,51 +413,21 @@ class Config {
        for (const [key, value] of Object.entries(obj)) {
          const k = envReplace(key, this.env)
          const v = this.parseField(value, k)
@@ -3080,9 +3100,24 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
    async #loadFile (file, type) {
      // only catch the error from readFile, not from the loadObject call
      log.silly('config', `load:file:${file}`)
-@@ -683,34 +473,23 @@ class Config {
+@@ -656,12 +455,6 @@ class Config {
+     // we return to make sure localPrefix is set
+     await this.loadLocalPrefix()
+ 
+-    // if we have not detected a local package json yet, try now that we
+-    // have a local prefix
+-    if (this.localPackage == null) {
+-      this.localPackage = await fileExists(this.localPrefix, 'package.json')
+-    }
+-
+     if (this.#get('global') === true || this.#get('location') === 'global') {
+       this.data.get('project').source = '(global mode enabled, ignored)'
+       this.sources.set(this.data.get('project').source, 'project')
+@@ -682,72 +475,20 @@ class Config {
+     }
    }
  
++  // RE-WRITTEN to use passed in projectRoot and workspaceRoot
    async loadLocalPrefix () {
 -    const cliPrefix = this.#get('prefix', 'cli')
 -    if (cliPrefix) {
@@ -3093,52 +3128,75 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
 -    const cliWorkspaces = this.#get('workspaces', 'cli')
      const isGlobal = this.#get('global') || this.#get('location') === 'global'
  
-     for (const p of walkUp(this.cwd)) {
+-    for (const p of walkUp(this.cwd)) {
 -      // HACK: this is an option set in tests to stop the local prefix from being set
 -      // on tests that are created inside the npm repo
 -      if (this.excludeNpmCwd && p === this.npmPath) {
 -        break
 -      }
 -
-       const hasPackageJson = await fileExists(p, 'package.json')
- 
-       if (!this.localPrefix && (hasPackageJson || await dirExists(p, 'node_modules'))) {
-+        // `p` is a package folder, and we're setting localPrefix for the first time
-         this.localPrefix = p
-         this.localPackage = hasPackageJson
- 
+-      const hasPackageJson = await fileExists(p, 'package.json')
+-
+-      if (!this.localPrefix && (hasPackageJson || await dirExists(p, 'node_modules'))) {
+-        this.localPrefix = p
+-        this.localPackage = hasPackageJson
+-
 -        // if workspaces are disabled, or we're in global mode, return now
 -        if (cliWorkspaces === false || isGlobal) {
-+        // if we're in global mode, return now
-+        if (isGlobal) {
-           return
-         }
- 
-         // otherwise, continue the loop
-+        // (have to keep searching up to see if we're in a workspace)
-         continue
-       }
- 
-@@ -720,6 +499,7 @@ class Config {
-         // then we need to see if `p` is a workspace root by reading its package.json
-         // however, if reading it fails then we should just move on
-         const { content: pkg } = await pkgJson.normalize(p).catch(() => ({ content: {} }))
-+        // @ts-ignore
-         if (!pkg?.workspaces) {
-           continue
-         }
-@@ -733,9 +513,7 @@ class Config {
-               log.warn('config', `ignoring workspace config at ${this.localPrefix}/.npmrc`)
-             }
- 
+-          return
+-        }
+-
+-        // otherwise, continue the loop
+-        continue
+-      }
+-
+-      if (this.localPrefix && hasPackageJson) {
+-        const pkgJson = require('@npmcli/package-json')
+-        // if we already set localPrefix but this dir has a package.json
+-        // then we need to see if `p` is a workspace root by reading its package.json
+-        // however, if reading it fails then we should just move on
+-        const { content: pkg } = await pkgJson.normalize(p).catch(() => ({ content: {} }))
+-        if (!pkg?.workspaces) {
+-          continue
+-        }
+-
+-        const mapWorkspaces = require('@npmcli/map-workspaces')
+-        const workspaces = await mapWorkspaces({ cwd: p, pkg })
+-        for (const w of workspaces.values()) {
+-          if (w === this.localPrefix) {
+-            // see if there's a .npmrc file in the workspace, if so log a warning
+-            if (await fileExists(this.localPrefix, '.npmrc')) {
+-              log.warn('config', `ignoring workspace config at ${this.localPrefix}/.npmrc`)
+-            }
+-
 -            // set the workspace in the default layer, which allows it to be overridden easily
 -            const { data } = this.data.get('default')
 -            data.workspace = [this.localPrefix]
-+            // (removed saving the 'workspace' path config value)
-             this.localPrefix = p
-             this.localPackage = hasPackageJson
-             log.info('config', `found workspace root at ${this.localPrefix}`)
-@@ -759,120 +537,11 @@ class Config {
+-            this.localPrefix = p
+-            this.localPackage = hasPackageJson
+-            log.info('config', `found workspace root at ${this.localPrefix}`)
+-            // we found a root, so we return now
+-            return
+-          }
+-        }
++    if (isGlobal) {
++      // in global mode, use the nearest package.json
++      this.localPrefix = this.#workspaceRoot
++    } else {
++      // see if there's a .npmrc file in the workspace, if so log a warning
++      if (this.#projectRoot !== this.#workspaceRoot && await fileExists(this.#workspaceRoot, '.npmrc')) {
++        log.warn('config', `ignoring workspace config at ${this.#workspaceRoot}/.npmrc`)
+       }
+-    }
+-
+-    if (!this.localPrefix) {
+-      this.localPrefix = this.cwd
++      // use the project root
++      this.localPrefix = this.#projectRoot
+     }
+   }
+ 
+@@ -759,120 +500,11 @@ class Config {
      return this.#loadFile(this.#get('globalconfig'), 'global')
    }
  
@@ -3259,7 +3317,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..6d8c14dbf8bef9b5681150d7058a43ad
      const certfileReg = this.get(`${nerfed}:certfile`)
      const keyfileReg = this.get(`${nerfed}:keyfile`)
      if (certfileReg && keyfileReg) {
-@@ -910,25 +579,20 @@ class Config {
+@@ -910,25 +542,20 @@ class Config {
      // at this point, nothing else is usable so just return what we do have
      return creds
    }

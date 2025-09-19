@@ -6,6 +6,7 @@ import {
   type ConfigurationDefinitionMap,
   type Plugin,
   type ConfigurationValueMap,
+  type Hooks,
 } from '@yarnpkg/core';
 import type { Hooks as NpmHooks } from '@yarnpkg/plugin-npm';
 
@@ -30,6 +31,13 @@ let npmrc: NpmConfig | undefined;
 let npmrcError: unknown;
 let cachedHeaders: Record<string, string | undefined> = {};
 
+let workspaceRoot: string | undefined;
+
+const validateProject: Hooks['validateProject'] = (project) => {
+  // Slightly misuse this hook to find the local workspace/package root
+  workspaceRoot = project.getWorkspaceByCwd(project.cwd).cwd;
+};
+
 /**
  * Yarn v4 doesn't respect .npmrc, so this plugin reads the token from .npmrc matching a
  * specified registry and applies it as an auth header for requests against that registry.
@@ -39,7 +47,7 @@ const getNpmAuthenticationHeader: NpmHooks['getNpmAuthenticationHeader'] = async
   registry,
   { configuration },
 ) => {
-  if (!configuration.get(enabledPropName)) {
+  if (!configuration.get(enabledPropName) || !configuration.projectCwd) {
     return currentHeader;
   }
 
@@ -58,7 +66,10 @@ const getNpmAuthenticationHeader: NpmHooks['getNpmAuthenticationHeader'] = async
     // Delay load this since auth is irrelevant for many commands
     const { loadNpmrc } = await import('./loadNpmrc');
     try {
-      npmrc = await loadNpmrc();
+      npmrc = await loadNpmrc({
+        projectRoot: configuration.projectCwd,
+        workspaceRoot: workspaceRoot || configuration.projectCwd,
+      });
     } catch (err) {
       npmrcError = err;
       throw npmrcError;
@@ -93,7 +104,7 @@ const getNpmAuthenticationHeader: NpmHooks['getNpmAuthenticationHeader'] = async
 };
 
 const plugin: Plugin = {
-  hooks: { getNpmAuthenticationHeader },
+  hooks: { validateProject, getNpmAuthenticationHeader },
   configuration: configurationMap,
 };
 

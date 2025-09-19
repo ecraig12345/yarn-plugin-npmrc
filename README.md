@@ -1,6 +1,6 @@
 # `yarn-plugin-npmrc`
 
-This plugin implements registry authentication using settings from `.npmrc`, following most of the same logic as npm itself.
+This plugin implements registry authentication using settings from `.npmrc`, following most of the same logic as `npm` itself.
 
 Pulling credentials from `.npmrc` can be helpful for repos migrating from another package manager, or for interoperability with other tools.
 
@@ -39,9 +39,28 @@ This plugin uses [`@npmcli/config`](https://www.npmjs.com/package/@npmcli/config
 - Environment variable replacement only supports variables from the actual process environment, not variables that would normally be added to the environment by npm. (This should have no impact on auth-related values in most cases; the only time it might cause issues is advanced modifications to the `prefix` or config paths which are then referenced as environment variables in a config.)
 - Certificate or key-based auth (`certfile`, `keyfile`) aren't supported.
 
-The versions of `@npmcli/config` and its internal `@npmcli/package-json` are patched locally (with the patches included in the plugin bundle). The initial motivation was to get rid of a problematic `require.resolve('node-gyp/bin/node-gyp.js')` which assumes the code is running within the `npm` package with its dependencies and isn't needed here. The patches also remove some code which isn't needed for the very simple purposes of this plugin.
+The version of `@npmcli/config` is patched locally (with the patch included in the plugin bundle) to address some issues and reduce the plugin bundle size.
 
-<details><summary>Updating the patches (expand for details)</summary>
+### Why patch `@npmcli/config`?
+
+The initial motivation was to get rid of a problematic `require.resolve('node-gyp/bin/node-gyp.js')`, which assumes the code is running within the `npm` package with its dependencies and causes a runtime error if `node-gyp` isn't present locally. That code isn't needed at all for auth, so patching to remove it was the simplest approach.
+
+The other reason for patching is to remove a bunch of code which isn't relevant to auth settings. The patch takes the plugin down from **220k to 28k** (minified), which matters because **Yarn loads _every plugin_ on _every command_**, even if the plugin isn't used by that command. So parsing a plugin with a bunch of unused bundled code is potentially a meaningful perf penalty when running `yarn build` or other commands across many packages in a large repo.
+
+(Arguably at this point the patch has gone a bit overboard and it would be better to just copy the relevant parts of the code, but there's some complex/nuanced behavior for config path modifications using environment variables which would be hard to pull out.)
+
+<details><summary>More details</summary>
+
+#### What's patched
+
+- Remove all unneeded option `definitions` (including the one referencing `node-gyp`) and logic specific to those options
+- Pass in the workspace/package and project roots (since yarn has already found these) and remove all the logic and dependencies related to finding `package.json` and matching its `workspaces` globs (allows removing large glob-related dependencies)
+- Remove option definition descriptions and related logging code
+- Remove CLI arg support
+- Remove all unused methods
+- Add partial typing support (not included in bundle) for easier development
+
+#### Updating the patch
 
 It's cleaner to make a fresh patch directory and use `git apply` to apply previous changes, rather than running `yarn patch -u` which adds a second patch file on top of the first one.
 

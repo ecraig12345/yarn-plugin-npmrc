@@ -246,7 +246,7 @@ __metadata:
 
 "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch":
   version: 10.4.0
-  resolution: "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch::version=10.4.0&hash=eafd26"
+  resolution: "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch::version=10.4.0&hash=c0831b"
   dependencies:
     "@npmcli/map-workspaces": "npm:^4.0.1"
     "@npmcli/package-json": "npm:^6.0.1"
@@ -256,7 +256,7 @@ __metadata:
     proc-log: "npm:^5.0.0"
     semver: "npm:^7.3.5"
     walk-up-path: "npm:^4.0.0"
-  checksum: 10c0/380a90c5c15ebff417d43ffc49cb277806ebb7a59651121f512d62ba31a13acb76e10a59876b5b8beda9b22d9baae487605b503b59285cacc9dfeeb61f89f5da
+  checksum: 10c0/a10553def5428f4a30f26ec7abd51a34534b37574e99ce1f3f932a65dc73b97df631cf69f243b654053699b764f942f5963b3ab6fdf1d0b4f86b3a327ce0ac94
   languageName: node
   linkType: hard
 
@@ -304,7 +304,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@npmcli/package-json@npm:6.2.0":
+"@npmcli/package-json@npm:^6.0.0, @npmcli/package-json@npm:^6.0.1":
   version: 6.2.0
   resolution: "@npmcli/package-json@npm:6.2.0"
   dependencies:
@@ -316,21 +316,6 @@ __metadata:
     semver: "npm:^7.5.3"
     validate-npm-package-license: "npm:^3.0.4"
   checksum: 10c0/2bd8345a542a9ecfca9061614ccd191aac1c1b792a4b62a0f99e289280977ea6641897e449b6e206e5e78b1b3cc8fb822c70eb1df7d42763dba00cade80321c8
-  languageName: node
-  linkType: hard
-
-"@npmcli/package-json@patch:@npmcli/package-json@npm%3A6.2.0#~/.yarn/patches/@npmcli-package-json-npm-6.2.0-6ed662ce85.patch":
-  version: 6.2.0
-  resolution: "@npmcli/package-json@patch:@npmcli/package-json@npm%3A6.2.0#~/.yarn/patches/@npmcli-package-json-npm-6.2.0-6ed662ce85.patch::version=6.2.0&hash=38411c"
-  dependencies:
-    "@npmcli/git": "npm:^6.0.0"
-    glob: "npm:^10.2.2"
-    hosted-git-info: "npm:^8.0.0"
-    json-parse-even-better-errors: "npm:^4.0.0"
-    proc-log: "npm:^5.0.0"
-    semver: "npm:^7.5.3"
-    validate-npm-package-license: "npm:^3.0.4"
-  checksum: 10c0/f2084d88f8c38877d25cacb29ae57ef9ada9d4a25439d3f09d85c64642e559db36559f6cf033825a98700da6656c8418d76e9380018cdf6b276be559ad7cf620
   languageName: node
   linkType: hard
 

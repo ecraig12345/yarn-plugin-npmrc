@@ -9,7 +9,12 @@ import { throwError } from './errors';
  * project config, user config, global config.
  * @returns The loaded and validated config object
  */
-export async function loadNpmrc(): Promise<NpmConfig> {
+export async function loadNpmrc(params: {
+  /** Root of the whole project (location of `yarn.lock` and root `package.json`) */
+  projectRoot: string;
+  /** Root of the current workspace/package (may be same as `projectRoot`) */
+  workspaceRoot: string;
+}): Promise<NpmConfig> {
   let npmPath = '';
   try {
     npmPath = fs.realpathSync(which.sync('npm'));
@@ -36,7 +41,8 @@ export async function loadNpmrc(): Promise<NpmConfig> {
 
   try {
     // NOTE: This is using a patched API!
-    const conf = new NpmConfig({ npmPath });
+    // The patch provides some options by default and adds pre-calculated projectRoot/workspaceRoot.
+    const conf = new NpmConfig({ npmPath, ...params });
     await conf.load();
     // This returns false if there are non-auth-related validation issues, but we only care about
     // the auth-related validation here (which is thrown as an error)
