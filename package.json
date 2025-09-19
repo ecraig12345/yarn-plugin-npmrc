@@ -5,9 +5,9 @@
   "license": "MIT",
   "main": "./src/index.ts",
   "scripts": {
-    "build": "builder build plugin",
-    "build:dev": "builder build plugin --no-minify",
-    "clean": "rimraf bundles"
+    "build": "yarn tsc && node scripts/build.js",
+    "clean": "rimraf bundles",
+    "release": "node scripts/release.js"
   },
   "dependencies": {
     "@npmcli/config": "patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch",

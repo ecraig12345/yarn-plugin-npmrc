@@ -6,6 +6,7 @@
     "lib": ["ES2021"],
     "esModuleInterop": true,
     "strict": true,
+    "noUnusedLocals": true,
     "allowJs": true,
     "checkJs": true,
     "skipLibCheck": true,
