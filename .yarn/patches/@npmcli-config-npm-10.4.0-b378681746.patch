@@ -2617,10 +2617,10 @@ index 0000000000000000000000000000000000000000..90726b2979e9e65bf7177caf28eb8b05
 +    type Credentials = TokenCredentials | AuthCredentials | BaseCredentials;
 +}
 diff --git a/lib/index.js b/lib/index.js
-index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44a1948d6e 100644
+index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5bde3a2ae 100644
 --- a/lib/index.js
 +++ b/lib/index.js
-@@ -1,27 +1,18 @@
+@@ -1,35 +1,22 @@
  // TODO: set the scope config from package.json or explicit cli config
 -const { walkUp } = require('walk-up-path')
 +/** @import Config from './index.js' */
@@ -2652,7 +2652,15 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
  const fileExists = (...p) => stat(resolve(...p))
    .then((st) => st.isFile())
    .catch(() => false)
-@@ -37,86 +28,80 @@ const typeDefs = require('./type-defs.js')
+ 
+-const dirExists = (...p) => stat(resolve(...p))
+-  .then((st) => st.isDirectory())
+-  .catch(() => false)
+-
+ const hasOwnProperty = (obj, key) =>
+   Object.prototype.hasOwnProperty.call(obj, key)
+ 
+@@ -37,86 +24,80 @@ const typeDefs = require('./type-defs.js')
  const nerfDart = require('./nerf-dart.js')
  const envReplace = require('./env-replace.js')
  const parseField = require('./parse-field.js')
@@ -2761,7 +2769,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
      this.data = new Map()
      let parent = null
      for (const where of wheres) {
-@@ -149,23 +134,10 @@ class Config {
+@@ -149,23 +130,10 @@ class Config {
      return this.#get('global') ? this.globalPrefix : this.localPrefix
    }
  
@@ -2789,7 +2797,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
    get (key, where) {
      if (!this.loaded) {
        throw new Error('call config.load() before reading values')
-@@ -175,68 +147,19 @@ class Config {
+@@ -175,68 +143,19 @@ class Config {
  
    // we need to get values sometimes, so use this internal one to do so
    // while in the process of loading.
@@ -2864,7 +2872,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
    async load () {
      if (this.loaded) {
        throw new Error('attempting to load npm config multiple times')
-@@ -249,7 +172,6 @@ class Config {
+@@ -249,7 +168,6 @@ class Config {
      await this.loadBuiltinConfig()
  
      // cli and env are not async, and can set the prefix, relevant to project
@@ -2872,7 +2880,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
      this.loadEnv()
  
      // next project config, which can affect userconfig location
-@@ -267,8 +189,6 @@ class Config {
+@@ -267,8 +185,6 @@ class Config {
  
      // set proper globalPrefix now that everything is loaded
      this.globalPrefix = this.get('prefix')
@@ -2881,7 +2889,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
    }
  
    loadDefaults () {
-@@ -355,24 +275,6 @@ class Config {
+@@ -355,24 +271,6 @@ class Config {
      this.#loadObject(conf, 'env', 'environment')
    }
  
@@ -2906,7 +2914,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
    get valid () {
      for (const [where, { valid }] of this.data.entries()) {
        if (valid === false || valid === null && !this.validate(where)) {
-@@ -382,6 +284,7 @@ class Config {
+@@ -382,6 +280,7 @@ class Config {
      return true
    }
  
@@ -2914,7 +2922,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
    validate (where) {
      if (!where) {
        let valid = true
-@@ -390,7 +293,7 @@ class Config {
+@@ -390,7 +289,7 @@ class Config {
        for (const entryWhere of this.data.keys()) {
          // no need to validate our defaults, we know they're fine
          // cli was already validated when parsed the first time
@@ -2923,7 +2931,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
            continue
          }
          const ret = this.validate(entryWhere)
-@@ -443,51 +346,18 @@ class Config {
+@@ -443,51 +342,18 @@ class Config {
        const obj = this.data.get(where)
        obj[_valid] = true
  
@@ -2977,7 +2985,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
    // Returns true if the value is coming directly from the source defined
    // in default definitions, if the current value for the key config is
    // coming from any other different source, returns false
-@@ -503,60 +373,19 @@ class Config {
+@@ -503,60 +369,19 @@ class Config {
    }
  
    invalidHandler (k, val, type, source, where) {
@@ -3043,7 +3051,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
    #loadObject (obj, where, source, er = null) {
      // obj is the raw data read from the file
      const conf = this.data.get(where)
-@@ -584,51 +413,21 @@ class Config {
+@@ -584,51 +409,21 @@ class Config {
        for (const [key, value] of Object.entries(obj)) {
          const k = envReplace(key, this.env)
          const v = this.parseField(value, k)
@@ -3100,7 +3108,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
    async #loadFile (file, type) {
      // only catch the error from readFile, not from the loadObject call
      log.silly('config', `load:file:${file}`)
-@@ -656,12 +455,6 @@ class Config {
+@@ -656,12 +451,6 @@ class Config {
      // we return to make sure localPrefix is set
      await this.loadLocalPrefix()
  
@@ -3113,7 +3121,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
      if (this.#get('global') === true || this.#get('location') === 'global') {
        this.data.get('project').source = '(global mode enabled, ignored)'
        this.sources.set(this.data.get('project').source, 'project')
-@@ -682,72 +475,20 @@ class Config {
+@@ -682,72 +471,20 @@ class Config {
      }
    }
  
@@ -3196,7 +3204,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
      }
    }
  
-@@ -759,120 +500,11 @@ class Config {
+@@ -759,120 +496,11 @@ class Config {
      return this.#loadFile(this.#get('globalconfig'), 'global')
    }
  
@@ -3317,7 +3325,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..51f2b76a37132ab1eb290afbd5a99e44
      const certfileReg = this.get(`${nerfed}:certfile`)
      const keyfileReg = this.get(`${nerfed}:keyfile`)
      if (certfileReg && keyfileReg) {
-@@ -910,25 +542,20 @@ class Config {
+@@ -910,25 +538,20 @@ class Config {
      // at this point, nothing else is usable so just return what we do have
      return creds
    }
@@ -3361,12 +3369,10 @@ index 030d92a82270d2b125b16ee64590b68c05440160..d92c461b53a66db00bbbeb34fb9a517a
   * Name courtesy schiffertronix media LLC, a New Jersey corporation
   *
 diff --git a/lib/parse-field.js b/lib/parse-field.js
-index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..9bd2a4feb7795bb39ed837824f5aaccaef9df06e 100644
+index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..374547b9b882ac1760de1ede349c8617f6771c82 100644
 --- a/lib/parse-field.js
 +++ b/lib/parse-field.js
-@@ -1,10 +1,7 @@
- // Parse a field, coercing it to the best type available.
--const typeDefs = require('./type-defs.js')
+@@ -3,8 +3,6 @@ const typeDefs = require('./type-defs.js')
  const envReplace = require('./env-replace.js')
  const { resolve } = require('node:path')
  
@@ -3375,7 +3381,7 @@ index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..9bd2a4feb7795bb39ed837824f5aacca
  const parseField = (f, key, opts, listElement = false) => {
    if (typeof f !== 'string' && !Array.isArray(f)) {
      return f
-@@ -17,10 +14,8 @@ const parseField = (f, key, opts, listElement = false) => {
+@@ -17,10 +15,8 @@ const parseField = (f, key, opts, listElement = false) => {
    const isPath = typeList.has(typeDefs.path.type)
    const isBool = typeList.has(typeDefs.Boolean.type)
    const isString = isPath || typeList.has(typeDefs.String.type)
@@ -3386,7 +3392,7 @@ index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..9bd2a4feb7795bb39ed837824f5aacca
  
    if (Array.isArray(f)) {
      return !isList ? f : f.map(field => parseField(field, key, opts, true))
-@@ -54,10 +49,6 @@ const parseField = (f, key, opts, listElement = false) => {
+@@ -54,10 +50,6 @@ const parseField = (f, key, opts, listElement = false) => {
  
    f = envReplace(f, env)
  
@@ -3397,7 +3403,7 @@ index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..9bd2a4feb7795bb39ed837824f5aacca
    if (isPath) {
      const homePattern = platform === 'win32' ? /^~(\/|\\)/ : /^~\//
      if (homePattern.test(f) && home) {
-@@ -67,15 +58,6 @@ const parseField = (f, key, opts, listElement = false) => {
+@@ -67,15 +59,6 @@ const parseField = (f, key, opts, listElement = false) => {
      }
    }
  

@@ -246,7 +246,7 @@ __metadata:
 
 "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch":
   version: 10.4.0
-  resolution: "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch::version=10.4.0&hash=c0831b"
+  resolution: "@npmcli/config@patch:@npmcli/config@npm%3A10.4.0#~/.yarn/patches/@npmcli-config-npm-10.4.0-b378681746.patch::version=10.4.0&hash=33015f"
   dependencies:
     "@npmcli/map-workspaces": "npm:^4.0.1"
     "@npmcli/package-json": "npm:^6.0.1"
@@ -256,7 +256,7 @@ __metadata:
     proc-log: "npm:^5.0.0"
     semver: "npm:^7.3.5"
     walk-up-path: "npm:^4.0.0"
-  checksum: 10c0/a10553def5428f4a30f26ec7abd51a34534b37574e99ce1f3f932a65dc73b97df631cf69f243b654053699b764f942f5963b3ab6fdf1d0b4f86b3a327ce0ac94
+  checksum: 10c0/562e95f39948e5201338885e48b9fae54b02dcbc2ba3afad2b6dcc06e1dfd2bf19c3ea6e19daf4c3417b666ec8e3682d007eeac754753aed6e1f827db0ff5dd7
   languageName: node
   linkType: hard
 

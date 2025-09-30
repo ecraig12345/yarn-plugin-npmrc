@@ -426,7 +426,7 @@ var plugin = (() => {
       function nopt(args, {
         types,
         shorthands,
-        typeDefs: typeDefs2,
+        typeDefs,
         invalidHandler,
         // opt is configured but its value does not validate against given type
         unknownHandler,
@@ -436,7 +436,7 @@ var plugin = (() => {
         typeDefault,
         dynamicTypes
       } = {}) {
-        debug(types, shorthands, args, typeDefs2);
+        debug(types, shorthands, args, typeDefs);
         const data = {};
         const argv = {
           remain: [],
@@ -444,14 +444,14 @@ var plugin = (() => {
           original: args.slice(0)
         };
         parse(args, data, argv.remain, {
-          typeDefs: typeDefs2,
+          typeDefs,
           types,
           dynamicTypes,
           shorthands,
           unknownHandler,
           abbrevHandler
         });
-        clean(data, { types, dynamicTypes, typeDefs: typeDefs2, invalidHandler, typeDefault });
+        clean(data, { types, dynamicTypes, typeDefs, invalidHandler, typeDefault });
         data.argv = argv;
         Object.defineProperty(data.argv, "toString", {
           value: function() {
@@ -463,16 +463,16 @@ var plugin = (() => {
       }
       function clean(data, {
         types = {},
-        typeDefs: typeDefs2 = {},
+        typeDefs = {},
         dynamicTypes,
         invalidHandler,
         typeDefault
       } = {}) {
-        const StringType = typeDefs2.String?.type;
-        const NumberType = typeDefs2.Number?.type;
-        const ArrayType = typeDefs2.Array?.type;
-        const BooleanType = typeDefs2.Boolean?.type;
-        const DateType = typeDefs2.Date?.type;
+        const StringType = typeDefs.String?.type;
+        const NumberType = typeDefs.Number?.type;
+        const ArrayType = typeDefs.Array?.type;
+        const BooleanType = typeDefs.Boolean?.type;
+        const DateType = typeDefs.Date?.type;
         const hasTypeDefault = typeof typeDefault !== "undefined";
         if (!hasTypeDefault) {
           typeDefault = [false, true, null];
@@ -534,7 +534,7 @@ var plugin = (() => {
             const d = {};
             d[k] = v;
             debug("prevalidated val", d, v, rawType);
-            if (!validate(d, k, v, rawType, { typeDefs: typeDefs2 })) {
+            if (!validate(d, k, v, rawType, { typeDefs })) {
               if (invalidHandler) {
                 invalidHandler(k, v, rawType, data);
               } else if (invalidHandler !== false) {
@@ -557,14 +557,14 @@ var plugin = (() => {
           debug("k=%s val=%j", k, val, data[k]);
         });
       }
-      function validate(data, k, val, type, { typeDefs: typeDefs2 } = {}) {
-        const ArrayType = typeDefs2?.Array?.type;
+      function validate(data, k, val, type, { typeDefs } = {}) {
+        const ArrayType = typeDefs?.Array?.type;
         if (Array.isArray(type)) {
           for (let i = 0, l = type.length; i < l; i++) {
             if (isTypeDef(type[i], ArrayType)) {
               continue;
             }
-            if (validate(data, k, val, type[i], { typeDefs: typeDefs2 })) {
+            if (validate(data, k, val, type[i], { typeDefs })) {
               return true;
             }
           }
@@ -585,10 +585,10 @@ var plugin = (() => {
           return true;
         }
         let ok = false;
-        const types = Object.keys(typeDefs2);
+        const types = Object.keys(typeDefs);
         for (let i = 0, l = types.length; i < l; i++) {
           debug("test type %j %j %j", k, val, types[i]);
-          const t = typeDefs2[types[i]];
+          const t = typeDefs[types[i]];
           if (t && (type && type.name && t.type && t.type.name ? type.name === t.type.name : type === t.type)) {
             const d = {};
             ok = t.validate(d, k, val) !== false;
@@ -607,16 +607,16 @@ var plugin = (() => {
       }
       function parse(args, data, remain, {
         types = {},
-        typeDefs: typeDefs2 = {},
+        typeDefs = {},
         shorthands = {},
         dynamicTypes,
         unknownHandler,
         abbrevHandler
       } = {}) {
-        const StringType = typeDefs2.String?.type;
-        const NumberType = typeDefs2.Number?.type;
-        const ArrayType = typeDefs2.Array?.type;
-        const BooleanType = typeDefs2.Boolean?.type;
+        const StringType = typeDefs.String?.type;
+        const NumberType = typeDefs.Number?.type;
+        const ArrayType = typeDefs.Array?.type;
+        const BooleanType = typeDefs.Boolean?.type;
         debug("parse", args, data, remain);
         const abbrevs = abbrev(Object.keys(types));
         debug("abbrevs=%j", abbrevs);
@@ -826,10 +826,10 @@ var plugin = (() => {
           abbrevHandler: exports.abbrevHandler
         });
       }
-      function clean(data, types, typeDefs2 = exports.typeDefs) {
+      function clean(data, types, typeDefs = exports.typeDefs) {
         return lib.clean(data, {
           types: types || {},
-          typeDefs: typeDefs2,
+          typeDefs,
           invalidHandler: exports.invalidHandler,
           unknownHandler: exports.unknownHandler,
           abbrevHandler: exports.abbrevHandler
@@ -1051,6 +1051,7 @@ var plugin = (() => {
   // node_modules/@npmcli/config/lib/parse-field.js
   var require_parse_field = __commonJS({
     "node_modules/@npmcli/config/lib/parse-field.js"(exports, module) {
+      var typeDefs = require_type_defs2();
       var envReplace = require_env_replace();
       var { resolve } = __require("path");
       var parseField = (f, key, opts, listElement = false) => {
@@ -1220,7 +1221,7 @@ var plugin = (() => {
       } = __require("fs/promises");
       var fileExists = (...p) => stat(resolve(...p)).then((st) => st.isFile()).catch(() => false);
       var hasOwnProperty = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
-      var typeDefs2 = require_type_defs2();
+      var typeDefs = require_type_defs2();
       var nerfDart = require_nerf_dart();
       var envReplace = require_env_replace();
       var parseField = require_parse_field();
@@ -1448,7 +1449,7 @@ var plugin = (() => {
             const obj = this.data.get(where);
             obj[_valid] = true;
             nopt.invalidHandler = (k, val, type) => this.invalidHandler(k, val, type, obj.source, where);
-            nopt.clean(obj.data, this.types, typeDefs2);
+            nopt.clean(obj.data, this.types, typeDefs);
             nopt.invalidHandler = null;
             return obj[_valid];
           }
