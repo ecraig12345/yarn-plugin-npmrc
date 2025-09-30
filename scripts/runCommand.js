@@ -1,6 +1,6 @@
 // @ts-check
 
-const { spawnSync } = require('child_process');
+const { execSync } = require('child_process');
 const path = require('path');
 
 /**
@@ -9,20 +9,18 @@ const path = require('path');
  * @param {string[]} args
  */
 function runCommand(command, args) {
-  console.log(`Running: ${command} ${args.join(' ')}`);
+  const commandString = `${command} ${args.join(' ')}`;
+  console.log(`Running: ${commandString}`);
 
-  const result = spawnSync(command, args, {
-    stdio: 'inherit',
-    cwd: path.resolve(__dirname, '..'),
-  });
-
-  if (result.error) {
-    console.error(`Error running ${command}: ${result.error.message}`);
-    process.exit(1);
-  }
-  if (result.status !== 0) {
-    console.error(`Error running command (see above for details)`);
-    process.exit(result.status);
+  try {
+    execSync(commandString, {
+      stdio: 'inherit',
+      cwd: path.resolve(__dirname, '..'),
+    });
+  } catch (error) {
+    console.error(`Error running ${command}: ${error instanceof Error ? error.message : String(error)}`);
+    const status = error && typeof error === 'object' && 'status' in error && Number.isInteger(error.status) ? Number(error.status) : 1;
+    process.exit(status);
   }
 }
 
