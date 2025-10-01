@@ -5,9 +5,13 @@ const paths = require('./paths');
 fs.rmSync(paths.dist, { recursive: true, force: true });
 fs.mkdirSync(paths.dist, { recursive: true });
 
-// The yarn builder has no way to specify output paths, so manually rename the files...
-runCommand('yarn', ['builder', 'build', 'plugin']);
-fs.renameSync(paths.bundleFile, paths.minBundle);
+runBuild(true);
+runBuild(false);
 
-runCommand('yarn', ['builder', 'build', 'plugin', '--no-minify']);
-fs.renameSync(paths.bundleFile, paths.devBundle);
+function runBuild(/** @type {boolean} */ minify) {
+  // The yarn builder has no way to specify output paths, so manually rename the files...
+  // Also fix EOLs on Windows
+  runCommand('yarn', ['builder', 'build', 'plugin', ...(minify ? [] : ['--no-minify'])]);
+  const contents = fs.readFileSync(paths.bundleFile, 'utf8').replace(/\r\n/g, '\n');
+  fs.writeFileSync(minify ? paths.minBundle : paths.devBundle, contents);
+}
