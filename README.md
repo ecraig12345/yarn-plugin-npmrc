@@ -73,14 +73,12 @@ If you just want to modify the patch contents, not update to the latest version,
 
 #### Updating the patched version
 
-It's cleaner to make a fresh patch directory and use `git apply` to apply previous changes, rather than running `yarn patch -u` which adds a second patch file on top of the first one.
+To update `@npmcli/config` to the latest version and re-apply the patch:
 
 1. In `package.json`, change the version of `@npmcli/config` to the desired registry version, and run `yarn`
 1. Delete `patches/@npmcli-config`
-1. `yarn patch @npmcli/config`
-1. Copy the **parent** of the listed folder to `patches/@npmcli-config`: e.g. if the logged version if `/<some temp path>/xfs-2077bfc8/user`, copy `/<some temp path>/xfs-2077bfc8`
-1. `cd patches/@npmcli-config/user`
-1. Substituting the previous patch file name, run `git apply ../../../.yarn/@npmcli-config-npm-<SUFFIX>.patch` and fix any conflicts
-1. Follow the instructions above to update the checked in patch
+1. Copy the **parent** of the listed folder to `patches/@npmcli-config`: e.g. if the logged version if `/<some temp path>/abcdef/user`, copy `/<some temp path>/abcdef`
+1. Substituting the previous patch file name, run `git apply --reject --directory=patches/@npmcli-config/user .yarn/patches/@npmcli-config-npm-<SUFFIX>.patch`
+1. If there are any `.rej` files, manually apply any rejected diffs (you can look at the diff in the `source` directory for help) and delete the `.rej` files
 
 </details>
