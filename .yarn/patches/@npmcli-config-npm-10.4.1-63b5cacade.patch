@@ -24,7 +24,7 @@ index 333a91928526ed4a754a8c471fa76db172ea1e76..6cbe3ce79ee8e4c1b5cc22f3b6261640
  // this keeps us from defining a config key and not
  // providing a default, description, etc.
 diff --git a/lib/definitions/definitions.js b/lib/definitions/definitions.js
-index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..82faccc07daaacc945d3d550e5df239900ddfd6a 100644
+index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df239900ddfd6a 100644
 --- a/lib/definitions/definitions.js
 +++ b/lib/definitions/definitions.js
 @@ -1,2311 +1,56 @@
@@ -439,14 +439,14 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..82faccc07daaacc945d3d550e5df2399
 -      \`\`\`
 -
 -      It is _not_ the path to a certificate file, though you can set a registry-scoped
--      "cafile" path like "//other-registry.tld/:cafile=/path/to/cert.pem".
+-      "certfile" path like "//other-registry.tld/:certfile=/path/to/cert.pem".
 -    `,
 -    deprecated: `
 -      \`key\` and \`cert\` are no longer used for most registry operations.
--      Use registry scoped \`keyfile\` and \`cafile\` instead.
+-      Use registry scoped \`keyfile\` and \`certfile\` instead.
 -      Example:
 -      //other-registry.tld/:keyfile=/path/to/key.pem
--      //other-registry.tld/:cafile=/path/to/cert.crt
+-      //other-registry.tld/:certfile=/path/to/cert.crt
 -    `,
 -    flatten,
 -  }),
@@ -1135,10 +1135,10 @@ index 1f324a590bea10ff1a11d17ed68f8dae5a0e428e..82faccc07daaacc945d3d550e5df2399
 -    `,
 -    deprecated: `
 -      \`key\` and \`cert\` are no longer used for most registry operations.
--      Use registry scoped \`keyfile\` and \`cafile\` instead.
+-      Use registry scoped \`keyfile\` and \`certfile\` instead.
 -      Example:
 -      //other-registry.tld/:keyfile=/path/to/key.pem
--      //other-registry.tld/:cafile=/path/to/cert.crt
+-      //other-registry.tld/:certfile=/path/to/cert.crt
 -    `,
 -    flatten,
 -  }),
@@ -3510,7 +3510,7 @@ index 2ddc5ca782232615eee4b3fd88054594ce5f5370..025d09904a3d9e557672dd5348be2461
    // this is run via nopt and parse field where everything is
    // converted to a string first, ignoring coverage for now
 diff --git a/package.json b/package.json
-index 5cb8925d4cf4bcdbbe3845a563270ec24f201540..5a81063b5ac700f059402a7d2e18dced91664c39 100644
+index 71d56eb8379d03ff6bff6cd2061dac127d57cc04..37d0cf3782a57d798862b44d5e74bf1c2a27f74a 100644
 --- a/package.json
 +++ b/package.json
 @@ -6,6 +6,7 @@
