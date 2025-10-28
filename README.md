@@ -31,6 +31,14 @@ In all cases:
 1. In your `.yarnrc.yml`, add: `npmrcAuthEnabled: true`
 1. Run `yarn` or other commands
 
+### Sample `.yarnrc.yml`
+
+```yml
+npmRegistryServer: https://yourcompany.pkgs.visualstudio.com/_packaging/yourfeed/npm/registry/
+npmAlwaysAuth: true
+npmrcAuthEnabled: true
+```
+
 ## Notes
 
 This plugin uses [`@npmcli/config`](https://www.npmjs.com/package/@npmcli/config) to read the effective npm config: applying `process.env.NPM_CONFIG_*`, project config, user config, and global config. There are a couple limitations:
