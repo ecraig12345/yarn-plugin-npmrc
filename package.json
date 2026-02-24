@@ -26,6 +26,18 @@
     "semver": "^7.7.2",
     "typescript": "^5.5.2"
   },
+  "resolutions": {
+    "glob@npm:^10.2.2": "^13.0.0",
+    "minimatch@npm:^9.0.5": "^10.2.2",
+    "tar@npm:^6.0.5": "^7.5.9"
+  },
+  "rationale": {
+    "resolutions": {
+      "glob@npm:^10.2.2": "Fix security issue (used API is compatible)",
+      "minimatch@npm:^9.0.5": "Remove insecure dep (not actually used)",
+      "tar@npm:^6.0.5": "Fix security issue (API is compatible)"
+    }
+  },
   "prettier": {
     "printWidth": 100,
     "singleQuote": true
