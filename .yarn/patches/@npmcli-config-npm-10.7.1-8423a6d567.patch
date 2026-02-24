@@ -14,7 +14,7 @@ index 0000000000000000000000000000000000000000..e422b39a7e9e6a749bf420391fbd152c
 +}
 \ No newline at end of file
 diff --git a/lib/definitions/definition.js b/lib/definitions/definition.js
-index 333a91928526ed4a754a8c471fa76db172ea1e76..6cbe3ce79ee8e4c1b5cc22f3b62616403d96841b 100644
+index c151506b2447631aaab2b1c0f3d7f47bcd6520cb..b6db81dbc5e81db95eb63932b1412a220d709850 100644
 --- a/lib/definitions/definition.js
 +++ b/lib/definitions/definition.js
 @@ -1,3 +1,5 @@
@@ -24,10 +24,10 @@ index 333a91928526ed4a754a8c471fa76db172ea1e76..6cbe3ce79ee8e4c1b5cc22f3b6261640
  // this keeps us from defining a config key and not
  // providing a default, description, etc.
 diff --git a/lib/definitions/definitions.js b/lib/definitions/definitions.js
-index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df239900ddfd6a 100644
+index 4c234699e2287da5dd36bc4b74c208a139a9e4f3..82faccc07daaacc945d3d550e5df239900ddfd6a 100644
 --- a/lib/definitions/definitions.js
 +++ b/lib/definitions/definitions.js
-@@ -1,2311 +1,56 @@
+@@ -1,2459 +1,56 @@
 -const Definition = require('./definition.js')
 -
 -const ciInfo = require('ci-info')
@@ -199,7 +199,7 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -    If you do not want your scoped package to be publicly viewable (and
 -    installable) set \`--access=restricted\`.
 -
--    Unscoped packages can not be set to \`restricted\`.
+-    Unscoped packages cannot be set to \`restricted\`.
 -
 -    Note: This defaults to not changing the current access level for existing
 -    packages.  Specifying a value of \`restricted\` or \`public\` during
@@ -225,6 +225,20 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -    description: `
 -    Prevents throwing an error when \`npm version\` is used to set the new
 -    version to the same value as the current version.
+-  `,
+-    flatten,
+-  }),
+-  'allow-git': new Definition('allow-git', {
+-    default: 'all',
+-    type: ['all', 'none', 'root'],
+-    description: `
+-      Limits the ability for npm to fetch dependencies from git references.
+-      That is, dependencies that point to a git repo instead of a version or semver range.
+-      Please note that this could leave your tree incomplete and some packages may not function as intended or designed.
+-
+-      \`all\` allows any git dependencies to be fetched and installed.
+-      \`none\` prevents any git dependencies from being fetched and installed.
+-      \`root\` only allows git dependencies defined in your project's package.json to be fetched installed.  Also allows git dependencies to be fetched for other commands like \`npm view\`
 -  `,
 -    flatten,
 -  }),
@@ -273,6 +287,7 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -    default: null,
 -    hint: '<date>',
 -    type: [null, Date],
+-    exclusive: ['min-release-age'],
 -    description: `
 -      If passed to \`npm install\`, will rebuild the npm tree such that only
 -      versions that were available **on or before** the given date are
@@ -312,6 +327,16 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -    terminal.
 -
 -    Set to \`true\` to use default system URL opener.
+-    `,
+-    flatten,
+-  }),
+-  'bypass-2fa': new Definition('bypass-2fa', {
+-    default: false,
+-    type: Boolean,
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      setting this to true will allow the token to bypass two-factor
+-      authentication. This is useful for automation and CI/CD workflows.
 -    `,
 -    flatten,
 -  }),
@@ -503,7 +528,7 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -  depth: new Definition('depth', {
 -    default: null,
 -    defaultDescription: `
--      \`Infinity\` if \`--all\` is set, otherwise \`0\`
+-      \`Infinity\` if \`--all\` is set; otherwise, \`0\`
 -    `,
 -    type: [null, Number],
 -    description: `
@@ -664,6 +689,16 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -      Tells npm whether or not to expect results from the command.
 -      Can be either true (expect some results) or false (expect no results).
 -    `,
+-  }),
+-  expires: new Definition('expires', {
+-    default: null,
+-    type: [null, Number],
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      this sets the expiration in days. If not specified, the server
+-      will determine the default expiration.
+-    `,
+-    flatten,
 -  }),
 -  'fetch-retries': new Definition('fetch-retries', {
 -    default: 2,
@@ -1246,7 +1281,7 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -    default: null,
 -    type: [null, 1, 2, 3, '1', '2', '3'],
 -    defaultDescription: `
--      Version 3 if no lockfile, auto-converting v1 lockfiles to v3, otherwise
+-      Version 3 if no lockfile, auto-converting v1 lockfiles to v3; otherwise,
 -      maintain current lockfile version.`,
 -    description: `
 -      Set the lockfile format version to be used in package-lock.json and
@@ -1322,6 +1357,16 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -      Show extended information in \`ls\`, \`search\`, and \`help-search\`.
 -    `,
 -  }),
+-  name: new Definition('name', {
+-    default: null,
+-    type: [null, String],
+-    hint: '<name>',
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      this sets the name/description for the token.
+-    `,
+-    flatten,
+-  }),
 -  maxsockets: new Definition('maxsockets', {
 -    default: 15,
 -    type: Number,
@@ -1344,8 +1389,36 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -    `,
 -    flatten,
 -  }),
+-  'min-release-age': new Definition('min-release-age', {
+-    default: null,
+-    hint: '<days>',
+-    type: [null, Number],
+-    exclusive: ['before'],
+-    description: `
+-       If set, npm will build the npm tree such that only versions that were
+-       available more than the given number of days ago will be installed.  If
+-       there are no versions available for the current set of dependencies, the
+-       command will error.
+-
+-       This flag is a complement to \`before\`, which accepts an exact date
+-       instead of a relative number of days.
+-    `,
+-    flatten: (key, obj, flatOptions) => {
+-      if (obj['min-release-age'] !== null) {
+-        flatOptions.before = new Date(Date.now() - (86400000 * obj['min-release-age']))
+-        obj.before = flatOptions.before
+-        delete obj['min-release-age']
+-      }
+-    },
+-  }),
 -  'node-gyp': new Definition('node-gyp', {
--    default: require.resolve('node-gyp/bin/node-gyp.js'),
+-    default: (() => {
+-      try {
+-        return require.resolve('node-gyp/bin/node-gyp.js')
+-      } catch {
+-        return ''
+-      }
+-    })(),
 -    defaultDescription: `
 -      The path to the node-gyp bin that ships with npm
 -    `,
@@ -1397,8 +1470,8 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -  omit: new Definition('omit', {
 -    default: process.env.NODE_ENV === 'production' ? ['dev'] : [],
 -    defaultDescription: `
--      'dev' if the \`NODE_ENV\` environment variable is set to 'production',
--      otherwise empty.
+-      'dev' if the \`NODE_ENV\` environment variable is set to 'production';
+-      otherwise, empty.
 -    `,
 -    type: [Array, 'dev', 'optional', 'peer'],
 -    description: `
@@ -1443,6 +1516,15 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -    flatten (key, obj, flatOptions) {
 -      definitions.omit.flatten('omit', obj, flatOptions)
 -    },
+-  }),
+-  orgs: new Definition('orgs', {
+-    default: null,
+-    type: [null, String, Array],
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      this limits the token access to specific organizations.
+-    `,
+-    flatten,
 -  }),
 -  optional: new Definition('optional', {
 -    default: null,
@@ -1537,6 +1619,15 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -    type: String,
 -    description: `
 -      Directory in which \`npm pack\` will save tarballs.
+-    `,
+-    flatten,
+-  }),
+-  packages: new Definition('packages', {
+-    default: [],
+-    type: [null, String, Array],
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      this limits the token access to specific packages.
 -    `,
 -    flatten,
 -  }),
@@ -1934,6 +2025,63 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
 -      // projectScope is kept for compatibility with npm-registry-fetch
 -      flatOptions.projectScope = scope
 -    },
+-  }),
+-  scopes: new Definition('scopes', {
+-    default: null,
+-    type: [null, String, Array],
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      this limits the token access to specific scopes. Provide
+-      a scope name (with or without @ prefix).
+-    `,
+-    flatten,
+-  }),
+-  'packages-all': new Definition('packages-all', {
+-    default: false,
+-    type: Boolean,
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      grants the token access to all packages instead of limiting to
+-      specific packages.
+-    `,
+-    flatten,
+-  }),
+-  'packages-and-scopes-permission': new Definition('packages-and-scopes-permission', {
+-    default: null,
+-    type: [null, 'read-only', 'read-write', 'no-access'],
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      sets the permission level for packages and scopes. Options are
+-      "read-only", "read-write", or "no-access".
+-    `,
+-    flatten,
+-  }),
+-  'orgs-permission': new Definition('orgs-permission', {
+-    default: null,
+-    type: [null, 'read-only', 'read-write', 'no-access'],
+-    description: `
+-      When creating a Granular Access Token with \`npm token create\`,
+-      sets the permission level for organizations. Options are
+-      "read-only", "read-write", or "no-access".
+-    `,
+-    flatten,
+-  }),
+-  password: new Definition('password', {
+-    default: null,
+-    type: [null, String],
+-    description: `
+-      Password for authentication. Can be provided via command line when
+-      creating tokens, though it's generally safer to be prompted for it.
+-    `,
+-    flatten,
+-  }),
+-  'token-description': new Definition('token-description', {
+-    default: null,
+-    type: [null, String],
+-    description: `
+-      Description text for the token when using \`npm token create\`.
+-    `,
+-    flatten,
 -  }),
 -  'script-shell': new Definition('script-shell', {
 -    default: null,
@@ -2351,7 +2499,7 @@ index caa834d823ed69029f18fcf656025005a2b8e359..82faccc07daaacc945d3d550e5df2399
  }
  
 diff --git a/lib/definitions/index.js b/lib/definitions/index.js
-index 793b71ea40d6f76ee5c6897ba43fd32ea6856056..d7718ffedcea83acd47ccda005819ebb797c04ff 100644
+index b5b63bf2fce126bfafd40684a807bfee7115dff0..d7718ffedcea83acd47ccda005819ebb797c04ff 100644
 --- a/lib/definitions/index.js
 +++ b/lib/definitions/index.js
 @@ -1,14 +1,10 @@
@@ -2374,7 +2522,7 @@ index 793b71ea40d6f76ee5c6897ba43fd32ea6856056..d7718ffedcea83acd47ccda005819ebb
  const flatten = (obj, flat = {}) => {
    for (const [key, val] of Object.entries(obj)) {
      const def = definitions[key]
-@@ -21,60 +17,7 @@ const flatten = (obj, flat = {}) => {
+@@ -21,68 +17,7 @@ const flatten = (obj, flat = {}) => {
    return flat
  }
  
@@ -2428,16 +2576,24 @@ index 793b71ea40d6f76ee5c6897ba43fd32ea6856056..d7718ffedcea83acd47ccda005819ebb
 -  'username', // Does not have a config
 -]
 -
+-const proxyEnv = [
+-  'http_proxy',
+-  'https_proxy',
+-  'proxy',
+-  'no_proxy',
+-]
+-
  module.exports = {
 -  defaults: definitionProps.defaults,
    definitions,
    flatten,
 -  nerfDarts,
+-  proxyEnv,
 -  shorthands,
  }
 diff --git a/lib/index.d.ts b/lib/index.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..90726b2979e9e65bf7177caf28eb8b0538318f41
+index 0000000000000000000000000000000000000000..bc93a9c12c4c8e861ed81f695d2c13e3afa94dbb
 --- /dev/null
 +++ b/lib/index.d.ts
 @@ -0,0 +1,175 @@
@@ -2473,7 +2629,7 @@ index 0000000000000000000000000000000000000000..90726b2979e9e65bf7177caf28eb8b05
 +     * prototype chain.  `config.list[0]` is the `cli` level, `config.list[1]`
 +     * is the `env` level, and so on.
 +     */
-+    list: Config.ConfigData[];
++    get list(): Config.ConfigData[];
 +    /** The `cwd` param */
 +    cwd: string;
 +    /** The `env` param */
@@ -2617,7 +2773,7 @@ index 0000000000000000000000000000000000000000..90726b2979e9e65bf7177caf28eb8b05
 +    type Credentials = TokenCredentials | AuthCredentials | BaseCredentials;
 +}
 diff --git a/lib/index.js b/lib/index.js
-index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5bde3a2ae 100644
+index 8520a02b6ed77c91c7c3de6cd4f2adfc77af989b..84468d74650252a6d72f8c43a818df5382eb53c4 100644
 --- a/lib/index.js
 +++ b/lib/index.js
 @@ -1,35 +1,22 @@
@@ -2660,7 +2816,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
  const hasOwnProperty = (obj, key) =>
    Object.prototype.hasOwnProperty.call(obj, key)
  
-@@ -37,86 +24,80 @@ const typeDefs = require('./type-defs.js')
+@@ -37,80 +24,80 @@ const typeDefs = require('./type-defs.js')
  const nerfDart = require('./nerf-dart.js')
  const envReplace = require('./env-replace.js')
  const parseField = require('./parse-field.js')
@@ -2694,6 +2850,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
 -  #flatten
 -  // populated the first time we flatten the object
 -  #flatOptions = null
+-  #warnings = []
 -
 -  static get typeDefs () {
 -    return typeDefs
@@ -2717,6 +2874,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
      execPath = process.execPath,
      cwd = process.cwd(),
 -    excludeNpmCwd = false,
+-    warn = true,
    }) {
 -    this.nerfDarts = nerfDarts
 -    this.definitions = definitions
@@ -2728,18 +2886,16 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
 +    this.#workspaceRoot = workspaceRoot
 +
      // turn the definitions into nopt's weirdo syntax
+-    const { types, defaults, deprecated } = getTypesFromDefinitions(definitions)
+-    this.deprecated = deprecated
 +    /** @type {Record<string, Object>} */
-     const types = {}
++    const types = {}
 +    /** @type {Record<string, any>} */
-     const defaults = {}
--    this.deprecated = {}
-     for (const [key, def] of Object.entries(definitions)) {
-       defaults[key] = def.default
-       types[key] = def.type
--      if (def.deprecated) {
--        this.deprecated[key] = def.deprecated.trim().replace(/\n +/, '\n')
--      }
-     }
++    const defaults = {}
++    for (const [key, def] of Object.entries(definitions)) {
++      defaults[key] = def.default
++      types[key] = def.type
++    }
  
 -    this.#flatten = flatten
      this.types = types
@@ -2769,7 +2925,18 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
      this.data = new Map()
      let parent = null
      for (const where of wheres) {
-@@ -149,23 +130,10 @@ class Config {
+@@ -131,9 +118,9 @@ class Config {
+     }
+ 
+     this.#loaded = false
+-    this.warn = warn
+   }
+ 
++  /** NOTE: this is a getter which will recompute each time it's accessed */
+   get list () {
+     const list = []
+     for (const { data } of this.data.values()) {
+@@ -150,23 +137,10 @@ class Config {
      return this.#get('global') ? this.globalPrefix : this.localPrefix
    }
  
@@ -2797,7 +2964,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
    get (key, where) {
      if (!this.loaded) {
        throw new Error('call config.load() before reading values')
-@@ -175,68 +143,19 @@ class Config {
+@@ -176,68 +150,19 @@ class Config {
  
    // we need to get values sometimes, so use this internal one to do so
    // while in the process of loading.
@@ -2872,7 +3039,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
    async load () {
      if (this.loaded) {
        throw new Error('attempting to load npm config multiple times')
-@@ -249,7 +168,6 @@ class Config {
+@@ -250,7 +175,6 @@ class Config {
      await this.loadBuiltinConfig()
  
      // cli and env are not async, and can set the prefix, relevant to project
@@ -2880,7 +3047,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
      this.loadEnv()
  
      // next project config, which can affect userconfig location
-@@ -267,8 +185,6 @@ class Config {
+@@ -268,8 +192,6 @@ class Config {
  
      // set proper globalPrefix now that everything is loaded
      this.globalPrefix = this.get('prefix')
@@ -2889,7 +3056,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
    }
  
    loadDefaults () {
-@@ -355,24 +271,6 @@ class Config {
+@@ -356,24 +278,6 @@ class Config {
      this.#loadObject(conf, 'env', 'environment')
    }
  
@@ -2901,7 +3068,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
 -    }
 -    nopt.invalidHandler = (k, val, type) =>
 -      this.invalidHandler(k, val, type, 'command line options', 'cli')
--    nopt.unknownHandler = this.unknownHandler
+-    nopt.unknownHandler = (k, next) => this.unknownHandler(k, next)
 -    nopt.abbrevHandler = this.abbrevHandler
 -    const conf = nopt(this.types, this.shorthands, this.argv)
 -    nopt.invalidHandler = null
@@ -2914,7 +3081,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
    get valid () {
      for (const [where, { valid }] of this.data.entries()) {
        if (valid === false || valid === null && !this.validate(where)) {
-@@ -382,6 +280,7 @@ class Config {
+@@ -383,6 +287,7 @@ class Config {
      return true
    }
  
@@ -2922,7 +3089,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
    validate (where) {
      if (!where) {
        let valid = true
-@@ -390,7 +289,7 @@ class Config {
+@@ -391,7 +296,7 @@ class Config {
        for (const entryWhere of this.data.keys()) {
          // no need to validate our defaults, we know they're fine
          // cli was already validated when parsed the first time
@@ -2931,7 +3098,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
            continue
          }
          const ret = this.validate(entryWhere)
-@@ -443,51 +342,18 @@ class Config {
+@@ -444,51 +349,18 @@ class Config {
        const obj = this.data.get(where)
        obj[_valid] = true
  
@@ -2985,7 +3152,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
    // Returns true if the value is coming directly from the source defined
    // in default definitions, if the current value for the key config is
    // coming from any other different source, returns false
-@@ -503,60 +369,19 @@ class Config {
+@@ -504,60 +376,19 @@ class Config {
    }
  
    invalidHandler (k, val, type, source, where) {
@@ -3025,7 +3192,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
 -
 -  unknownHandler (key, next) {
 -    if (next) {
--      log.warn(`"${next}" is being parsed as a normal command line argument.`)
+-      this.queueWarning(`unknown:${next}`, `"${next}" is being parsed as a normal command line argument.`)
 -    }
 -  }
 -
@@ -3051,7 +3218,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
    #loadObject (obj, where, source, er = null) {
      // obj is the raw data read from the file
      const conf = this.data.get(where)
-@@ -584,51 +409,21 @@ class Config {
+@@ -585,54 +416,21 @@ class Config {
        for (const [key, value] of Object.entries(obj)) {
          const k = envReplace(key, this.env)
          const v = this.parseField(value, k)
@@ -3060,7 +3227,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
 -          if (this.definitions[key]?.exclusive) {
 -            for (const exclusive of this.definitions[key].exclusive) {
 -              if (!this.isDefault(exclusive)) {
--                throw new TypeError(`--${key} can not be provided when using --${exclusive}`)
+-                throw new TypeError(`--${key} cannot be provided when using --${exclusive}`)
 -              }
 -            }
 -          }
@@ -3079,13 +3246,16 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
 -      if (internalEnv.includes(key)) {
 -        return
 -      }
+-      const hint = where !== 'cli'
+-        ? ' See `npm help npmrc` for supported config options.'
+-        : ''
 -      if (!key.includes(':')) {
--        log.warn(`Unknown ${where} config "${where === 'cli' ? '--' : ''}${key}". This will stop working in the next major version of npm.`)
+-        this.queueWarning(key, `Unknown ${where} config "${where === 'cli' ? '--' : ''}${key}". This will stop working in the next major version of npm.${hint}`)
 -        return
 -      }
 -      const baseKey = key.split(':').pop()
 -      if (!this.definitions[baseKey] && !this.nerfDarts.includes(baseKey)) {
--        log.warn(`Unknown ${where} config "${baseKey}" (${key}). This will stop working in the next major version of npm.`)
+-        this.queueWarning(baseKey, `Unknown ${where} config "${baseKey}" (${key}). This will stop working in the next major version of npm.${hint}`)
 -      }
 -    }
 -  }
@@ -3108,7 +3278,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
    async #loadFile (file, type) {
      // only catch the error from readFile, not from the loadObject call
      log.silly('config', `load:file:${file}`)
-@@ -656,12 +451,6 @@ class Config {
+@@ -660,12 +458,6 @@ class Config {
      // we return to make sure localPrefix is set
      await this.loadLocalPrefix()
  
@@ -3121,7 +3291,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
      if (this.#get('global') === true || this.#get('location') === 'global') {
        this.data.get('project').source = '(global mode enabled, ignored)'
        this.sources.set(this.data.get('project').source, 'project')
-@@ -682,72 +471,20 @@ class Config {
+@@ -686,72 +478,20 @@ class Config {
      }
    }
  
@@ -3204,7 +3374,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
      }
    }
  
-@@ -759,120 +496,11 @@ class Config {
+@@ -763,120 +503,11 @@ class Config {
      return this.#loadFile(this.#get('globalconfig'), 'global')
    }
  
@@ -3325,7 +3495,7 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
      const certfileReg = this.get(`${nerfed}:certfile`)
      const keyfileReg = this.get(`${nerfed}:keyfile`)
      if (certfileReg && keyfileReg) {
-@@ -910,25 +538,20 @@ class Config {
+@@ -914,54 +545,20 @@ class Config {
      // at this point, nothing else is usable so just return what we do have
      return creds
    }
@@ -3335,6 +3505,35 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
 -  // set EDITOR and HOME.
 -  setEnvs () {
 -    setEnvs(this)
+-  }
+-
+-  removeWarning (key) {
+-    this.#warnings = this.#warnings.filter(w => w.type !== key)
+-  }
+-
+-  getUnknownPositionals () {
+-    return this.#warnings
+-      .filter(w => w.type.startsWith('unknown:'))
+-      .map(w => w.type.slice('unknown:'.length))
+-  }
+-
+-  removeUnknownPositional (value) {
+-    this.removeWarning(`unknown:${value}`)
+-  }
+-
+-  queueWarning (type, ...args) {
+-    if (!this.warn) {
+-      this.#warnings.push({ type, args })
+-    } else {
+-      log.warn(...args)
+-    }
+-  }
+-
+-  logWarnings () {
+-    for (const warning of this.#warnings) {
+-      log.warn(...warning.args)
+-    }
+-    this.#warnings = []
 -  }
  }
  
@@ -3355,6 +3554,28 @@ index 9c1fad0c59f620c694d785374116f1d53bcda295..1190b6f0fc3187f578c8fe49817ac1c5
      this[_valid] = true
    }
  
+@@ -1007,21 +604,4 @@ class ConfigData {
+   }
+ }
+ 
+-const getTypesFromDefinitions = (definitions) => {
+-  const types = {}
+-  const defaults = {}
+-  const deprecated = {}
+-
+-  for (const [key, def] of Object.entries(definitions)) {
+-    defaults[key] = def.default
+-    types[key] = def.type
+-    if (def.deprecated) {
+-      deprecated[key] = def.deprecated.trim().replace(/\n +/, '\n')
+-    }
+-  }
+-
+-  return { types, defaults, deprecated }
+-}
+-
+ module.exports = Config
+-module.exports.getTypesFromDefinitions = getTypesFromDefinitions
 diff --git a/lib/nerf-dart.js b/lib/nerf-dart.js
 index 030d92a82270d2b125b16ee64590b68c05440160..d92c461b53a66db00bbbeb34fb9a517a5a190100 100644
 --- a/lib/nerf-dart.js
@@ -3420,7 +3641,7 @@ index 9ac3d21cae8b718108b33c7ff2d9ac2fb1a95982..374547b9b882ac1760de1ede349c8617
      f = +f
    }
 diff --git a/lib/set-envs.js b/lib/set-envs.js
-index 30e175dae867f21f370dcdfd2057bb53e8b47a38..7351cc51ffe9011e3950a8584e1e75250e420414 100644
+index 12719b56478363a53caddeb5ea3aa0af32cb015a..38fc20d201dc4b6a17e8d34266f3923c12126834 100644
 --- a/lib/set-envs.js
 +++ b/lib/set-envs.js
 @@ -1,3 +1,5 @@
@@ -3510,7 +3731,7 @@ index 2ddc5ca782232615eee4b3fd88054594ce5f5370..025d09904a3d9e557672dd5348be2461
    // this is run via nopt and parse field where everything is
    // converted to a string first, ignoring coverage for now
 diff --git a/package.json b/package.json
-index 71d56eb8379d03ff6bff6cd2061dac127d57cc04..37d0cf3782a57d798862b44d5e74bf1c2a27f74a 100644
+index 980a53d738b48dbdb8088f6f4f5abe64281e306b..f621754a974bdcfcf19fb4337e622afb113fb88b 100644
 --- a/package.json
 +++ b/package.json
 @@ -6,6 +6,7 @@

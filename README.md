@@ -88,5 +88,6 @@ To update `@npmcli/config` to the latest version and re-apply the patch:
 1. Copy the **parent** of the listed folder to `patches/@npmcli-config`: e.g. if the logged version if `/<some temp path>/abcdef/user`, copy `/<some temp path>/abcdef`
 1. Substituting the previous patch file name, run `git apply --reject --directory=patches/@npmcli-config/user .yarn/patches/@npmcli-config-npm-<SUFFIX>.patch`
 1. If there are any `.rej` files, manually apply any rejected diffs (you can look at the diff in the `source` directory for help) and delete the `.rej` files
+1. Update `.yarn/patches` as above
 
 </details>

@@ -30,7 +30,7 @@ declare class Config<Definitions extends Config.DefinitionsObject = Config.Defin
      * prototype chain.  `config.list[0]` is the `cli` level, `config.list[1]`
      * is the `env` level, and so on.
      */
-    list: Config.ConfigData[];
+    get list(): Config.ConfigData[];
     /** The `cwd` param */
     cwd: string;
     /** The `env` param */
