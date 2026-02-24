@@ -36,7 +36,7 @@ fs.writeFileSync(paths.readme, readmeText, 'utf8');
 runCommand('git', ['reset']);
 // add the modified files and commit
 runCommand('git', ['add', paths.packageJson, paths.readme, paths.dist]);
-runCommand('git', ['commit', '-m', `Bump version to ${vNew}`]);
+runCommand('git', ['commit', '-m', `"Bump version to ${vNew}"`]);
 // tag and push the new version
 runCommand('git', ['tag', vNew]);
 runCommand('git', ['push', '--tags', 'origin', 'main']);
