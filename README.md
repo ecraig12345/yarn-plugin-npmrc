@@ -1,3 +1,5 @@
+# Moved to https://github.com/ecraig12345/yarn-plugins/tree/main/plugins/npmrc
+
 # `yarn-plugin-npmrc`
 
 This plugin implements registry authentication using settings from `.npmrc`, following most of the same logic as `npm` itself.
